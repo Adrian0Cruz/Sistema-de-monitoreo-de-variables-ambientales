@@ -31,7 +31,20 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'access_level',
     ];
+
+    /**
+     * Get the human readable access level label for the operator.
+     */
+    public function getAccessLevelLabelAttribute(): string
+    {
+        return match ($this->access_level) {
+            'N3' => 'NIVEL 3 SUPERVISOR',
+            'N2' => 'NIVEL 2 TÉCNICO',
+            default => 'NIVEL 1 SOLO LECTURA',
+        };
+    }
 
     /**
      * The attributes that should be hidden for serialization.

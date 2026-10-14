@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 use Laravel\Jetstream\Features;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends Factory<User>
  */
 class UserFactory extends Factory
 {
@@ -34,6 +34,7 @@ class UserFactory extends Factory
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'remember_token' => Str::random(10),
+            'access_level' => 'N1',
             'profile_photo_path' => null,
             'current_team_id' => null,
         ];
