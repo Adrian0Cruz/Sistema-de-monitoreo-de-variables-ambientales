@@ -2,16 +2,16 @@
 
 <x-modal :id="$id" :maxWidth="$maxWidth" {{ $attributes }}>
     <div class="px-6 py-4">
-        <div class="text-lg font-medium text-gray-900 dark:text-gray-100">
+        <div class="font-headline-md text-headline-md font-semibold text-on-surface">
             {{ $title }}
         </div>
 
-        <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+        <div class="mt-4 font-body-md text-body-md text-outline">
             {{ $content }}
         </div>
     </div>
 
-    <div class="flex flex-row justify-end px-6 py-4 bg-gray-100 dark:bg-gray-800 text-end">
+    <div class="flex flex-row justify-end items-center gap-2 px-6 py-4 bg-surface-container-high border-t border-outline-variant/30 text-end">
         {{ $footer }}
     </div>
 </x-modal>
