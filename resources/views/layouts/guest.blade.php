@@ -5,52 +5,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Intalnet SCADA') }} - Security Gateway</title>
+    <title>{{ config('app.name', 'AetherSens') }} – {{ $title ?? 'Acceso' }}</title>
+    <meta name="description" content="AetherSens – Sistema de monitoreo ambiental para salas de servidores.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+    {{-- Geist via Fontshare --}}
+    <link href="https://api.fontshare.com/v2/css?f[]=geist@1,2,3,4,5,6,7&display=swap" rel="stylesheet">
+    {{-- JetBrains Mono --}}
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    {{-- Material Symbols --}}
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="bg-surface font-body-md text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container min-h-screen relative overflow-x-hidden flex flex-col justify-between">
-    <!-- Ambient Grid Background -->
-    <div class="fixed inset-0 pointer-events-none bg-[radial-gradient(#191f31_1px,transparent_1px)] [background-size:16px_16px] opacity-25 z-0"></div>
+<body class="bg-surface font-body-md text-body-md text-on-surface antialiased min-h-screen flex flex-col">
 
-    <!-- Header Gateway -->
-    <header class="fixed top-0 left-0 right-0 z-40 bg-surface/80 backdrop-blur-md border-b border-outline-variant/30">
-        <div class="h-12 w-full px-margin flex items-center justify-between">
+    {{-- ===================== TOP HEADER ===================== --}}
+    <header class="fixed top-0 left-0 right-0 z-40 bg-surface-container-low/90 backdrop-blur-md border-b border-outline-variant">
+        <div class="h-14 w-full max-w-7xl mx-auto px-margin-md flex items-center justify-between">
+
+            {{-- Brand --}}
             <a class="flex items-center gap-space-sm" href="{{ url('/') }}">
-                <div class="w-6 h-6 bg-surface-container-high flex items-center justify-center text-primary">
-                    <span class="material-symbols-outlined text-[16px]">terminal</span>
+                <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center">
+                    <span class="material-symbols-outlined text-primary text-[18px]">sensors</span>
                 </div>
-                <span class="font-headline-sm text-headline-sm text-on-surface">INTALNET<span class="text-primary ml-1">SECURITY GATEWAY</span></span>
+                <span class="font-headline-sm text-headline-sm text-on-surface tracking-tight">AetherSens</span>
             </a>
-            <div class="flex items-center gap-space-sm">
-                <span class="font-code-xs text-code-xs text-outline">MODO SEGURO</span>
-                <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-                <span class="font-code-xs text-code-xs text-on-surface-variant font-medium">TLS 1.3 / FIPS-140-3</span>
+
+            {{-- Node status pill --}}
+            <div class="flex items-center gap-space-xs text-on-surface-variant font-code-sm text-code-sm">
+                <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                <span class="tracking-wide uppercase">NODE 01 NOMINAL</span>
             </div>
+
+            {{-- User icon (decorative) --}}
+            <div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center text-on-surface-variant">
+                <span class="material-symbols-outlined text-[18px]">person</span>
+            </div>
+
         </div>
     </header>
 
-    <!-- Slot for Form Content -->
-    <main class="relative z-10 w-full min-h-screen pt-12 flex flex-col justify-between">
+    {{-- ===================== MAIN CONTENT ===================== --}}
+    <main class="flex-1 flex flex-col justify-center items-center pt-14 pb-space-xl px-margin-md">
         {{ $slot }}
-
-        <!-- Footer Gateway -->
-        <div class="w-full py-space-sm px-margin bg-surface-container-lowest/80 backdrop-blur-sm flex flex-wrap items-center justify-between gap-space-sm shadow-[0_-1px_6px_rgba(0,0,0,0.3)] border-t border-outline-variant/30">
-            <div class="flex items-center gap-space-md">
-                <span class="font-code-xs text-code-xs text-outline">NORMATIVA DE ACCESO: OPERADORES SIL-2/SIL-3</span>
-                <span class="font-code-xs text-code-xs text-outline-variant">|</span>
-                <span class="font-code-xs text-code-xs text-on-surface-variant">NODO AUTH: 10.240.4.12:8443</span>
-            </div>
-            <div class="font-code-xs text-code-xs text-outline">INTALNET TELEMETRY OS • AUTENTICACIÓN CRIPTOGRÁFICA INDUSTRIAL</div>
-        </div>
     </main>
 
+    {{-- ===================== FOOTER ===================== --}}
+    <footer class="w-full bg-surface-container-lowest py-space-md shadow-[0_-1px_8px_rgba(0,0,0,0.1)]">
+        <div class="max-w-7xl mx-auto px-margin-md text-center text-on-surface-variant font-body-sm text-body-sm tracking-wide">
+            AetherSens Internal Operations &bull; Telemetry System
+        </div>
+    </footer>
+
     @livewireScripts
+
 </body>
 </html>

@@ -1,9 +1,13 @@
-<div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100 dark:bg-gray-900">
-    <div>
-        {{ $logo }}
-    </div>
+<div class="w-full flex flex-col items-center justify-center py-space-xl">
+    <div class="relative w-full max-w-[460px]">
+        @isset($logo)
+            <div class="flex justify-center mb-6">
+                {{ $logo }}
+            </div>
+        @endisset
 
-    <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white dark:bg-gray-800 shadow-md overflow-hidden sm:rounded-lg">
-        {{ $slot }}
+        <div class="w-full bg-surface-container rounded-xl shadow-card-lg p-space-xl flex flex-col border border-outline-variant/30">
+            {{ $slot }}
+        </div>
     </div>
 </div>

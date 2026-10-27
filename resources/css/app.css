@@ -1,4 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* AetherSens – Geist from Fontshare + JetBrains Mono from Google Fonts */
+@import url('https://api.fontshare.com/v2/css?f[]=geist@1,2,3,4,5,6,7&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
 
 @tailwind base;
@@ -12,20 +14,33 @@
 @layer base {
     body {
         overscroll-behavior: none;
+        font-variant-numeric: tabular-nums;
     }
+
     ::-webkit-scrollbar {
         width: 6px;
         height: 6px;
     }
     ::-webkit-scrollbar-track {
-        background: #070d1f;
+        background: #0a0e17;
     }
     ::-webkit-scrollbar-thumb {
-        background: #23293c;
-        border-radius: 2px;
+        background: #262a33;
+        border-radius: 3px;
     }
     ::-webkit-scrollbar-thumb:hover {
-        background: #4cd7f6;
+        background: #a4c9ff;
     }
 }
 
+@layer components {
+    /* Sensor status badge variants */
+    .badge-normal   { @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-tertiary/10 text-tertiary font-label-sm text-label-sm border border-tertiary/20; }
+    .badge-warning  { @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-secondary/10 text-secondary font-label-sm text-label-sm border border-secondary/20; }
+    .badge-critical { @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-error/10 text-error font-label-sm text-label-sm border border-error/20; }
+
+    /* Table row highlight on Livewire update */
+    .livewire-update-flash {
+        background-color: rgba(74, 144, 226, 0.08);
+    }
+}

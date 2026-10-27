@@ -1,36 +1,92 @@
 <x-guest-layout>
-    <x-authentication-card>
-        <x-slot name="logo">
-            <x-authentication-card-logo />
-        </x-slot>
+    <div class="w-full flex flex-col items-center justify-center py-space-xl">
 
-        <x-validation-errors class="mb-4" />
+        {{-- Auth Card --}}
+        <div class="w-full max-w-[460px] bg-surface-container rounded-xl shadow-card-lg p-space-xl flex flex-col border border-outline-variant/30">
 
-        <form method="POST" action="{{ route('password.update') }}">
-            @csrf
-
-            <input type="hidden" name="token" value="{{ $request->route('token') }}">
-
-            <div class="block">
-                <x-label for="email" value="{{ __('Email') }}" />
-                <x-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $request->email)" required autofocus autocomplete="username" />
+            {{-- Brand / Header --}}
+            <div class="flex flex-col items-center text-center mb-space-lg">
+                <div class="w-12 h-12 rounded-xl bg-primary-container/20 border border-primary/30 flex items-center justify-center text-primary mb-3">
+                    <span class="material-symbols-outlined text-[28px]">lock_reset</span>
+                </div>
+                <h1 class="font-headline-lg text-headline-lg font-semibold text-on-surface tracking-tight">
+                    AetherSens
+                </h1>
+                <p class="font-body-md text-body-md text-outline mt-1">
+                    Actualizar credenciales de acceso
+                </p>
             </div>
 
-            <div class="mt-4">
-                <x-label for="password" value="{{ __('Password') }}" />
-                <x-input id="password" class="block mt-1 w-full" type="password" name="password" required autocomplete="new-password" />
-            </div>
+            <x-validation-errors class="mb-4" />
 
-            <div class="mt-4">
-                <x-label for="password_confirmation" value="{{ __('Confirm Password') }}" />
-                <x-input id="password_confirmation" class="block mt-1 w-full" type="password" name="password_confirmation" required autocomplete="new-password" />
-            </div>
+            <form method="POST" action="{{ route('password.update') }}" class="flex flex-col gap-space-md">
+                @csrf
 
-            <div class="flex items-center justify-end mt-4">
-                <x-button>
-                    {{ __('Reset Password') }}
-                </x-button>
-            </div>
-        </form>
-    </x-authentication-card>
+                <input type="hidden" name="token" value="{{ $request->route('token') }}">
+
+                <div class="flex flex-col gap-space-xs">
+                    <label class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-1.5 font-medium" for="email">
+                        Correo Corporativo
+                    </label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value="{{ old('email', $request->email) }}"
+                        required
+                        autofocus
+                        autocomplete="username"
+                        class="w-full bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg px-4 py-3 placeholder:text-outline/60 outline-none border border-outline-variant/40 focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-inner"
+                    />
+                </div>
+
+                <div class="flex flex-col gap-space-xs">
+                    <label class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-1.5 font-medium" for="password">
+                        Nueva Contraseña
+                    </label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        required
+                        autocomplete="new-password"
+                        placeholder="••••••••••••"
+                        class="w-full bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg px-4 py-3 placeholder:text-outline/60 outline-none border border-outline-variant/40 focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-inner"
+                    />
+                </div>
+
+                <div class="flex flex-col gap-space-xs">
+                    <label class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-1.5 font-medium" for="password_confirmation">
+                        Confirmar Contraseña
+                    </label>
+                    <input
+                        type="password"
+                        id="password_confirmation"
+                        name="password_confirmation"
+                        required
+                        autocomplete="new-password"
+                        placeholder="••••••••••••"
+                        class="w-full bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg px-4 py-3 placeholder:text-outline/60 outline-none border border-outline-variant/40 focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-inner"
+                    />
+                </div>
+
+                <div class="mt-2">
+                    <button
+                        type="submit"
+                        class="w-full bg-primary-container hover:bg-primary text-on-primary-container font-headline-sm text-body-md font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 group cursor-pointer"
+                    >
+                        <span>Restablecer Contraseña</span>
+                        <span class="material-symbols-outlined text-lg group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+                    </button>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-outline-variant/30 text-center">
+                    <a href="{{ route('login') }}" class="font-label-sm text-label-sm text-outline hover:text-on-surface transition-colors flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-sm">arrow_back</span>
+                        <span>Volver al inicio de sesión</span>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
 </x-guest-layout>

@@ -1,45 +1,55 @@
 <x-guest-layout>
-    <x-authentication-card>
-        <x-slot name="logo">
-            <x-authentication-card-logo />
-        </x-slot>
+    <div class="w-full flex flex-col items-center justify-center py-space-xl">
 
-        <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-            {{ __('Before continuing, could you verify your email address by clicking on the link we just emailed to you? If you didn\'t receive the email, we will gladly send you another.') }}
-        </div>
+        <div class="w-full max-w-[480px] bg-surface-container rounded-xl shadow-card-lg p-space-xl flex flex-col border border-outline-variant/30">
 
-        @if (session('status') == 'verification-link-sent')
-            <div class="mb-4 font-medium text-sm text-green-600 dark:text-green-400">
-                {{ __('A new verification link has been sent to the email address you provided in your profile settings.') }}
-            </div>
-        @endif
-
-        <div class="mt-4 flex items-center justify-between">
-            <form method="POST" action="{{ route('verification.send') }}">
-                @csrf
-
-                <div>
-                    <x-button type="submit">
-                        {{ __('Resend Verification Email') }}
-                    </x-button>
+            <div class="flex flex-col items-center text-center mb-space-lg">
+                <div class="w-12 h-12 rounded-xl bg-primary-container/20 border border-primary/30 flex items-center justify-center text-primary mb-3">
+                    <span class="material-symbols-outlined text-[28px]">mark_email_read</span>
                 </div>
-            </form>
+                <h1 class="font-headline-lg text-headline-lg font-semibold text-on-surface tracking-tight">
+                    Verificación de Correo
+                </h1>
+                <p class="font-body-md text-body-md text-outline mt-2 text-center">
+                    {{ __('Antes de continuar, por favor verifica tu dirección de correo haciendo clic en el enlace que te enviamos. Si no lo has recibido, te podemos enviar uno nuevo.') }}
+                </p>
+            </div>
 
-            <div>
-                <a
-                    href="{{ route('profile.show') }}"
-                    class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
-                >
-                    {{ __('Edit Profile') }}</a>
+            @if (session('status') == 'verification-link-sent')
+                <div class="p-space-md rounded-lg bg-tertiary-container/20 border border-tertiary/30 text-tertiary font-body-sm text-sm mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-base">check_circle</span>
+                    <span>{{ __('Se ha enviado un nuevo enlace de verificación a tu dirección de correo electrónico.') }}</span>
+                </div>
+            @endif
 
-                <form method="POST" action="{{ route('logout') }}" class="inline">
+            <div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <form method="POST" action="{{ route('verification.send') }}" class="w-full sm:w-auto">
                     @csrf
-
-                    <button type="submit" class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800 ms-2">
-                        {{ __('Log Out') }}
+                    <button
+                        type="submit"
+                        class="w-full sm:w-auto bg-primary-container hover:bg-primary text-on-primary-container font-headline-sm text-body-md font-semibold py-2.5 px-4 rounded-lg transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                        <span>Reenviar Enlace</span>
+                        <span class="material-symbols-outlined text-base">send</span>
                     </button>
                 </form>
+
+                <div class="flex items-center gap-4 text-sm">
+                    <a
+                        href="{{ route('profile.show') }}"
+                        class="text-outline hover:text-on-surface transition-colors"
+                    >
+                        {{ __('Editar Perfil') }}
+                    </a>
+
+                    <form method="POST" action="{{ route('logout') }}" class="inline">
+                        @csrf
+                        <button type="submit" class="text-error hover:underline transition-colors cursor-pointer">
+                            {{ __('Cerrar Sesión') }}
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
-    </x-authentication-card>
+    </div>
 </x-guest-layout>
