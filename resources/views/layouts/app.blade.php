@@ -19,6 +19,10 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
+
+    {{-- Telemetry Libraries: ApexCharts & MQTT.js --}}
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
 <body class="bg-surface font-body-md text-on-surface antialiased selection:bg-primary-container/30 selection:text-on-surface min-h-screen">
 
@@ -49,27 +53,39 @@
                 {{-- Dashboard (active route) --}}
                 <a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg transition-colors font-body-md text-body-md
                     {{ request()->routeIs('dashboard')
-                        ? 'bg-surface-container-high text-primary'
+                        ? 'bg-surface-container-high text-primary font-medium'
                         : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
                     href="{{ route('dashboard') }}">
                     <span class="material-symbols-outlined text-[18px]">dashboard</span>
                     <span>Dashboard</span>
                 </a>
 
-                <a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-body-md text-body-md"
-                    href="#">
+                {{-- Historical Data --}}
+                <a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg transition-colors font-body-md text-body-md
+                    {{ request()->routeIs('historical-data')
+                        ? 'bg-surface-container-high text-primary font-medium'
+                        : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
+                    href="{{ route('historical-data') }}">
                     <span class="material-symbols-outlined text-[18px]">show_chart</span>
                     <span>Historical Data</span>
                 </a>
 
-                <a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-body-md text-body-md"
-                    href="#">
+                {{-- Alert Logs --}}
+                <a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg transition-colors font-body-md text-body-md
+                    {{ request()->routeIs('alert-logs')
+                        ? 'bg-surface-container-high text-primary font-medium'
+                        : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
+                    href="{{ route('alert-logs') }}">
                     <span class="material-symbols-outlined text-[18px]">warning</span>
                     <span>Alert Logs</span>
                 </a>
 
-                <a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-body-md text-body-md"
-                    href="#">
+                {{-- Settings --}}
+                <a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg transition-colors font-body-md text-body-md
+                    {{ request()->routeIs('settings')
+                        ? 'bg-surface-container-high text-primary font-medium'
+                        : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
+                    href="{{ route('settings') }}">
                     <span class="material-symbols-outlined text-[18px]">tune</span>
                     <span>Settings</span>
                 </a>
@@ -209,6 +225,7 @@
 
     @stack('modals')
     @livewireScripts
+    @stack('scripts')
 
 </body>
 </html>

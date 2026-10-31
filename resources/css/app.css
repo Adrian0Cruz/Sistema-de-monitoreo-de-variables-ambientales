@@ -12,6 +12,11 @@
 }
 
 @layer base {
+    /* Eliminar el caret o punto de inserción de forma global y absoluta en todas las vistas */
+    *, *::before, *::after {
+        caret-color: transparent !important;
+    }
+
     body {
         overscroll-behavior: none;
         font-variant-numeric: tabular-nums;

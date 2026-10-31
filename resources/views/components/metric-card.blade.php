@@ -1,13 +1,15 @@
 @props([
     'title',
     'value',
-    'unit'         => '',
-    'status'       => 'normal',
-    'statusLabel'  => 'Normal',
-    'range'        => '',
-    'icon'         => 'thermostat',
-    'iconColor'    => 'text-primary',
-    'valueColor'   => 'text-on-surface',
+    'unit'          => '',
+    'status'        => 'normal',
+    'statusLabel'   => 'Normal',
+    'range'         => '',
+    'icon'          => 'thermostat',
+    'iconColor'     => 'text-primary',
+    'valueColor'    => 'text-on-surface',
+    'valueId'       => null,
+    'statusBadgeId' => null,
 ])
 
 @php
@@ -34,16 +36,16 @@ $dotClasses = match($status) {
             <span class="font-headline-sm text-headline-sm text-on-surface">{{ $title }}</span>
         </div>
 
-        <span class="px-2.5 py-1 rounded-md {{ $statusClasses }} font-label-sm text-label-sm flex items-center gap-1.5">
+        <span @if($statusBadgeId) id="{{ $statusBadgeId }}" @endif class="px-2.5 py-1 rounded-md {{ $statusClasses }} font-label-sm text-label-sm flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full {{ $dotClasses }}"></span>
-            {{ $statusLabel }}
+            <span class="status-text">{{ $statusLabel }}</span>
         </span>
     </div>
 
     {{-- Metric Value + Unit --}}
     <div>
         <div class="flex items-baseline gap-2">
-            <span class="font-display-lg text-display-lg tracking-tight {{ $valueColor }} font-semibold">
+            <span @if($valueId) id="{{ $valueId }}" @endif class="font-display-lg text-display-lg tracking-tight {{ $valueColor }} font-semibold">
                 {{ $value }}
             </span>
             @if($unit)
