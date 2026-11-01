@@ -105,7 +105,7 @@ package-lock.json.backup
 !bootstrap/cache/.gitignore
 
 # ------------------------------------------------------------------------------
-# 6. Editores de Código y Entornos de Desarrollo (IDEs)
+# 6. Editores de Código, Herramientas de IA y Entornos de Desarrollo (IDEs)
 # ------------------------------------------------------------------------------
 .idea/
 .vscode/
@@ -113,6 +113,12 @@ package-lock.json.backup
 .codex/
 .zed/
 .nova/
+.claude/
+.mcp.json
+boost.json
+CLAUDE.md
+context.md
+DESIGN.md
 *.sublime-project
 *.sublime-workspace
 *.swp
