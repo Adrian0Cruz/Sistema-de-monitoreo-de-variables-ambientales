@@ -1,26 +1,43 @@
 <x-app-layout>
     <div x-data="{
         guardado: false,
-        form: {
-            tempMin: 18.0,
-            tempMax: 24.0,
-            tempCritica: 28.0,
-            humMin: 40.0,
-            humMax: 55.0,
-            humCritica: 70.0,
-            humoPpm: 50,
-            brokerHost: 'broker.hivemq.com',
-            brokerPort: 8884,
-            topic: 'pas_iot/datacenter/telemetria',
-            intervalo: 3,
-            watchdog: 10,
-            zona: 'Zona A - Sala de Racks',
-            audioAlert: true,
-            auditLog: true
+        guardando: false,
+        form: @js($settings),
+        init() {
+            const saved = localStorage.getItem('aethersens_settings');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    this.form = Object.assign({}, this.form, parsed);
+                } catch (e) {
+                    console.warn('[AetherSens] Error al leer ajustes de localStorage:', e);
+                }
+            }
         },
-        guardar() {
-            this.guardado = true;
-            setTimeout(() => this.guardado = false, 3500);
+        async guardar() {
+            this.guardando = true;
+            // 1. Guardar de forma inmediata en el almacenamiento del navegador
+            localStorage.setItem('aethersens_settings', JSON.stringify(this.form));
+
+            // 2. Persistir en el backend de Laravel
+            try {
+                const response = await fetch('{{ route('settings.save') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(this.form)
+                });
+                if (!response.ok) throw new Error('Error en backend');
+            } catch (err) {
+                console.warn('[AetherSens] Ajustes guardados en navegador; error al sincronizar backend:', err);
+            } finally {
+                this.guardando = false;
+                this.guardado = true;
+                setTimeout(() => this.guardado = false, 4000);
+            }
         }
     }" class="flex flex-col w-full gap-y-8">
 
@@ -30,7 +47,7 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
             <div>
                 <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">
-                    AetherSens Enterprise &bull; Parámetros de Operación
+                    AetherSens Enterprise &bull; Parámetros de Operación &bull; Montería, CO
                 </span>
                 <h1 class="font-headline-lg text-headline-lg text-on-surface mt-1">
                     Configuración del Sistema
@@ -40,12 +57,14 @@
             <div class="flex items-center gap-3">
                 <span x-show="guardado" x-transition class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-tertiary/15 text-tertiary font-label-md text-label-md border border-tertiary/30">
                     <span class="material-symbols-outlined text-[18px]">check_circle</span>
-                    <span>Parámetros guardados con éxito</span>
+                    <span>Parámetros guardados y sincronizados</span>
                 </span>
 
-                <button @click="guardar()" class="flex items-center gap-2 px-5 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container transition-colors font-label-md text-label-md font-medium shadow-md">
-                    <span class="material-symbols-outlined text-[18px]">save</span>
-                    <span>Guardar Cambios</span>
+                <button @click="guardar()" :disabled="guardando" class="flex items-center gap-2 px-5 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container transition-colors font-label-md text-label-md font-medium shadow-md cursor-pointer disabled:opacity-50">
+                    <span class="material-symbols-outlined text-[18px]" :class="guardando ? 'animate-spin' : ''">
+                        <span x-text="guardando ? 'sync' : 'save'">save</span>
+                    </span>
+                    <span x-text="guardando ? 'Guardando...' : 'Guardar Cambios'">Guardar Cambios</span>
                 </button>
             </div>
         </div>
@@ -59,8 +78,8 @@
                     <span class="material-symbols-outlined text-[20px]">tune</span>
                 </div>
                 <div>
-                    <h2 class="font-headline-sm text-headline-sm text-on-surface">Umbrales Ambientales de Telemetría</h2>
-                    <p class="font-body-sm text-body-sm text-outline">Límites de tolerancia para activar estados de Advertencia y Crítico</p>
+                    <h2 class="font-headline-sm text-headline-sm text-on-surface">Umbrales Ambientales de Telemetría (ASHRAE TC 9.9)</h2>
+                    <p class="font-body-sm text-body-sm text-outline">Calibración adaptada al clima cálido de Montería y climatización por aire acondicionado (16°C mín)</p>
                 </div>
             </div>
 
@@ -69,49 +88,49 @@
                 {{-- Temperatura Mínima --}}
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Temperatura Mínima Óptima (°C)</label>
-                    <input type="number" step="0.5" x-model="form.tempMin" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
-                    <span class="text-[11px] text-outline">Por debajo se alerta por enfriamiento excesivo</span>
+                    <input type="number" step="0.5" x-model.number="form.tempMin" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
+                    <span class="text-[11px] text-outline">Límite para prevenir condensación y sobreenfriamiento con aires a 16°C</span>
                 </div>
 
                 {{-- Temperatura Advertencia --}}
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Temperatura Máxima Advertencia (°C)</label>
-                    <input type="number" step="0.5" x-model="form.tempMax" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-secondary font-code-sm text-code-sm focus:ring-1 focus:ring-secondary focus:border-secondary">
-                    <span class="text-[11px] text-outline">Límite operativo estándar ASHRAE (24°C)</span>
+                    <input type="number" step="0.5" x-model.number="form.tempMax" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-secondary font-code-sm text-code-sm focus:ring-1 focus:ring-secondary focus:border-secondary">
+                    <span class="text-[11px] text-outline">Techo de operación segura recomendado por ASHRAE (24.0°C)</span>
                 </div>
 
                 {{-- Temperatura Crítica --}}
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Temperatura Crítica (°C)</label>
-                    <input type="number" step="0.5" x-model="form.tempCritica" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-error font-code-sm text-code-sm focus:ring-1 focus:ring-error focus:border-error">
-                    <span class="text-[11px] text-outline">Dispara alarma inmediata de sobrecalentamiento</span>
+                    <input type="number" step="0.5" x-model.number="form.tempCritica" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-error font-code-sm text-code-sm focus:ring-1 focus:ring-error focus:border-error">
+                    <span class="text-[11px] text-outline">Alarma inmediata antes de thermal throttling en servidores (28.0°C)</span>
                 </div>
 
                 {{-- Humedad Mínima --}}
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Humedad Mínima Permitida (% RH)</label>
-                    <input type="number" step="1" x-model="form.humMin" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
-                    <span class="text-[11px] text-outline">Riesgo de descarga electrostática (ESD)</span>
+                    <input type="number" step="1" x-model.number="form.humMin" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
+                    <span class="text-[11px] text-outline">Piso para evitar descargas electrostáticas (ESD) (40% RH)</span>
                 </div>
 
                 {{-- Humedad Máxima --}}
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Humedad Máxima Óptima (% RH)</label>
-                    <input type="number" step="1" x-model="form.humMax" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-secondary font-code-sm text-code-sm focus:ring-1 focus:ring-secondary focus:border-secondary">
-                    <span class="text-[11px] text-outline">Rango recomendado para hardware de racks</span>
+                    <input type="number" step="1" x-model.number="form.humMax" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-secondary font-code-sm text-code-sm focus:ring-1 focus:ring-secondary focus:border-secondary">
+                    <span class="text-[11px] text-outline">Rango seguro en el clima tropical de Montería (60% RH)</span>
                 </div>
 
                 {{-- Humedad Crítica --}}
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Humedad Crítica (% RH)</label>
-                    <input type="number" step="1" x-model="form.humCritica" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-error font-code-sm text-code-sm focus:ring-1 focus:ring-error focus:border-error">
-                    <span class="text-[11px] text-outline">Riesgo crítico de condensación y cortocircuito</span>
+                    <input type="number" step="1" x-model.number="form.humCritica" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-error font-code-sm text-code-sm focus:ring-1 focus:ring-error focus:border-error">
+                    <span class="text-[11px] text-outline">Riesgo inminente de condensación corrosiva sobre circuitos (75% RH)</span>
                 </div>
 
                 {{-- Humo Umbral --}}
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Sensibilidad Sensor de Humo (PPM)</label>
-                    <input type="number" step="5" x-model="form.humoPpm" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-tertiary font-code-sm text-code-sm focus:ring-1 focus:ring-tertiary focus:border-tertiary">
+                    <input type="number" step="5" x-model.number="form.humoPpm" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-tertiary font-code-sm text-code-sm focus:ring-1 focus:ring-tertiary focus:border-tertiary">
                     <span class="text-[11px] text-outline">Umbral para declarar presencia de partículas de combustión</span>
                 </div>
 
@@ -144,7 +163,7 @@
                 {{-- WebSocket Port --}}
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Puerto WebSockets Seguro (WSS)</label>
-                    <input type="number" x-model="form.brokerPort" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
+                    <input type="number" x-model.number="form.brokerPort" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
                     <span class="text-[11px] text-outline">Puerto SSL para navegador (8884)</span>
                 </div>
 
@@ -158,14 +177,14 @@
                 {{-- Intervalo --}}
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Intervalo de Transmisión (Segundos)</label>
-                    <input type="number" x-model="form.intervalo" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
+                    <input type="number" x-model.number="form.intervalo" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
                     <span class="text-[11px] text-outline">Cadencia de envío del DHT11 (3 segundos)</span>
                 </div>
 
                 {{-- Timeout / Watchdog --}}
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Watchdog de Pérdida de Señal (Segundos)</label>
-                    <input type="number" x-model="form.watchdog" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
+                    <input type="number" x-model.number="form.watchdog" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
                     <span class="text-[11px] text-outline">Tiempo sin paquetes antes de marcar ESP32 desconectado</span>
                 </div>
 

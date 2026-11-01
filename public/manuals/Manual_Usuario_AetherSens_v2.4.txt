@@ -1,0 +1,65 @@
+================================================================================
+AETHERSENS ENTERPRISE v2.4 - MANUAL DE USUARIO Y OPERACIONES DEL SISTEMA
+Sistema de Supervisión Ambiental en Tiempo Real para Centros de Datos
+================================================================================
+
+1. DESCRIPCIÓN GENERAL
+--------------------------------------------------------------------------------
+AetherSens es una plataforma de supervisión y control ambiental de misión crítica
+diseñada para la monitorización continua de temperatura, humedad relativa, sensación
+térmica (índice de calor) y detección temprana de humo en salas de servidores y racks
+perimetrales de telecomunicaciones.
+
+2. ARQUITECTURA DE PANTALLA Y LECTURA DE TELEMETRÍA
+--------------------------------------------------------------------------------
+El Panel de Control (Dashboard) presenta cuatro tarjetas KPI principales:
+- TEMPERATURA: Medida en grados Celsius (°C).
+  * Rango Óptimo: 18.0 °C a 24.0 °C (Conforme a ASHRAE TC 9.9 Clase A1).
+  * Advertencia: 25.0 °C a 27.9 °C (Degradación de climatización).
+  * Nivel Crítico: >= 28.0 °C (Alarma inmediata antes de thermal throttling).
+- HUMEDAD RELATIVA: Medida en % RH.
+  * Rango Óptimo: 40% a 60% RH.
+  * Advertencia: < 30% (riesgo ESD) o > 65% RH.
+  * Nivel Crítico: >= 75% RH (riesgo inminente de condensación y corrosión).
+- SENSACIÓN TÉRMICA (HEAT INDEX):
+  * Índice térmico calculado por el microcontrolador ESP32 mediante el algoritmo
+    DHT de Rothfusz considerando el acoplamiento calor/humedad.
+- DETECCIÓN DE HUMO:
+  * Sensor electroquímico MQ-2 para detección de partículas de combustión y pirólisis.
+
+3. GRÁFICA DE DOBLE EJE EN TIEMPO REAL
+--------------------------------------------------------------------------------
+La gráfica de telemetría en vivo implementa dos ejes independientes:
+- EJE Y IZQUIERDO (Azul / Primario): Temperatura (°C), con escalado adaptativo automático.
+- EJE Y DERECHO (Turquesa / Secundario): Humedad Relativa (0% – 100% RH).
+- EJE X: Marcas temporales continuas sincronizadas con la zona horaria UTC-5 (Colombia).
+  Las etiquetas están protegidas contra superposiciones mediante distribución equiespaciada.
+
+4. SINCRONIZACIÓN Y CLIMA BASE (MONTERÍA, CÓRDOBA)
+--------------------------------------------------------------------------------
+Al abrir el panel de control, si el microcontrolador ESP32 aún no ha enviado paquetes,
+el sistema consulta las condiciones atmosféricas locales o la referencia de Montería
+(8.75°N, -75.88°W) para proporcionar una línea base verosímil y calibrada.
+En el momento exacto en que el ESP32 transmite el primer paquete MQTT, el panel
+conmuta automáticamente a "ESP32 Sincronizado".
+
+5. CONFIGURACIÓN Y PERSISTENCIA DE UMBRALES
+--------------------------------------------------------------------------------
+Desde el módulo "Configuración" (/settings), el operador puede:
+- Modificar los umbrales de temperatura y humedad mínimas, máximas y críticas.
+- Ajustar el servidor broker MQTT (por defecto broker.hivemq.com, puerto 8884 WSS).
+- Modificar el temporizador Watchdog (tiempo de espera antes de declarar desconexión).
+- Los cambios se guardan localmente en el navegador y en el servidor (settings.json),
+  actualizando de forma reactiva e inmediata todas las tarjetas del panel de control.
+
+6. RESOLUCIÓN DE INCIDENCIAS
+--------------------------------------------------------------------------------
+- "Esperando señal ESP32": Compruebe que el microcontrolador tenga alimentación (5V/3.3V)
+  y acceso a la red WiFi corporativa (VLAN 402).
+- Estado "Alerta" o "Crítico": Inspeccione inmediatamente los sistemas de aire acondicionado
+  y asegure que las puertas de pasillo frío estén cerradas herméticamente.
+
+================================================================================
+AetherSens NOC Team - Documento Técnico de Operaciones
+================================================================================
+

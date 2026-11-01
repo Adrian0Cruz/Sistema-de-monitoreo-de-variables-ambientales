@@ -5,6 +5,7 @@
     'status'        => 'normal',
     'statusLabel'   => 'Normal',
     'range'         => '',
+    'rangeId'       => null,
     'icon'          => 'thermostat',
     'iconColor'     => 'text-primary',
     'valueColor'    => 'text-on-surface',

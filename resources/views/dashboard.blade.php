@@ -42,6 +42,8 @@
                     'critical' => 'Crítico',
                     default    => 'Normal',
                 };
+                $tMin = $settings['tempMin'] ?? 18;
+                $tMax = $settings['tempMax'] ?? 24;
             @endphp
             <x-metric-card
                 title="Temperatura"
@@ -51,7 +53,8 @@
                 :statusLabel="$tempStatusLabel"
                 icon="thermostat"
                 iconColor="text-primary"
-                range="Rango operativo: 18°C – 24°C"
+                range="Rango operativo: {{ $tMin }}°C – {{ $tMax }}°C"
+                rangeId="metric-temp-range"
                 valueId="metric-temp-val"
                 statusBadgeId="metric-temp-badge"
             />
@@ -64,6 +67,8 @@
                     'critical' => 'Crítico',
                     default    => 'Normal',
                 };
+                $hMin = $settings['humMin'] ?? 40;
+                $hMax = $settings['humMax'] ?? 60;
             @endphp
             <x-metric-card
                 title="Humedad Relativa"
@@ -73,7 +78,8 @@
                 :statusLabel="$humedadStatusLabel"
                 icon="humidity_mid"
                 iconColor="text-secondary"
-                range="Rango operativo: 40% – 55%"
+                range="Rango operativo: {{ $hMin }}% – {{ $hMax }}%"
+                rangeId="metric-hum-range"
                 valueId="metric-hum-val"
                 statusBadgeId="metric-hum-badge"
             />
@@ -313,6 +319,53 @@
         let currentHum  = 45.0;
         let lastMqttPacketTime = 0;
 
+        // Cargar configuración de Laravel y sincronizar con localStorage del usuario
+        let appSettings = @js($settings ?? []);
+        try {
+            const localSaved = localStorage.getItem('aethersens_settings');
+            if (localSaved) {
+                appSettings = Object.assign({}, appSettings, JSON.parse(localSaved));
+            }
+        } catch (e) {
+            console.warn('[AetherSens] No se pudo leer localStorage:', e);
+        }
+
+        // Reflejar rangos configurados en el DOM inmediatamente
+        function applyConfiguredRanges() {
+            const tempRangeEl = document.getElementById('metric-temp-range');
+            if (tempRangeEl && appSettings.tempMin !== undefined && appSettings.tempMax !== undefined) {
+                tempRangeEl.textContent = `Rango operativo: ${appSettings.tempMin}°C – ${appSettings.tempMax}°C`;
+            }
+            const humRangeEl = document.getElementById('metric-hum-range');
+            if (humRangeEl && appSettings.humMin !== undefined && appSettings.humMax !== undefined) {
+                humRangeEl.textContent = `Rango operativo: ${appSettings.humMin}% – ${appSettings.humMax}%`;
+            }
+            if (appSettings.zona) {
+                const zoneEl = document.getElementById('esp32-zone-text');
+                if (zoneEl) zoneEl.textContent = appSettings.zona;
+            }
+        }
+        applyConfiguredRanges();
+
+        // Evaluación dinámica de umbrales según parámetros guardados (ASHRAE TC 9.9 / Montería)
+        function evaluateTempStatus(val) {
+            const min = Number(appSettings.tempMin ?? 18);
+            const max = Number(appSettings.tempMax ?? 24);
+            const crit = Number(appSettings.tempCritica ?? 28);
+            if (val >= min && val <= max) return 'normal';
+            if (val >= crit || val < (min - 3)) return 'critical';
+            return 'warning';
+        }
+
+        function evaluateHumStatus(val) {
+            const min = Number(appSettings.humMin ?? 40);
+            const max = Number(appSettings.humMax ?? 60);
+            const crit = Number(appSettings.humCritica ?? 75);
+            if (val >= min && val <= max) return 'normal';
+            if (val >= crit || val < (min - 10)) return 'critical';
+            return 'warning';
+        }
+
         // Generar 20 puntos iniciales con marcas temporales reales en milisegundos
         const nowMs = Date.now();
         for (let i = maxPoints - 1; i >= 0; i--) {
@@ -427,10 +480,16 @@
             },
             yaxis: [
                 {
-                    // Eje Y Izquierdo: TEMPERATURA (°C)
+                    // Eje Y Izquierdo: TEMPERATURA (°C) - ESCALA DINÁMICA
                     seriesName: 'Temperatura',
-                    min: 15,
-                    max: 35,
+                    min: function (min) {
+                        if (min === undefined || min === null || isNaN(min)) return 15;
+                        return Math.min(15, Math.floor((min - 2) / 5) * 5);
+                    },
+                    max: function (max) {
+                        if (max === undefined || max === null || isNaN(max)) return 35;
+                        return Math.max(35, Math.ceil((max + 2) / 5) * 5);
+                    },
                     tickAmount: 4,
                     axisTicks: {
                         show: true,
@@ -465,7 +524,7 @@
                     // Eje Y Derecho: HUMEDAD RELATIVA (% RH)
                     opposite: true,
                     seriesName: 'Humedad',
-                    min: 20,
+                    min: 0,
                     max: 100,
                     tickAmount: 4,
                     axisTicks: {
@@ -550,8 +609,108 @@
                 }
             }, 3000);
 
+            // Obtener clima real de la ciudad actual (o Montería como respaldo) antes de sincronizar con el ESP32
+            initWeatherBaseline();
+
             // Iniciar conexión MQTT
             connectMqtt();
+        }
+
+        // =========================================================================
+        // 2. CLIMA REAL DE RESPALDO (Geolocalización o Montería, Córdoba)
+        // =========================================================================
+        const DEFAULT_MONTERIA_LAT  = 8.7579;
+        const DEFAULT_MONTERIA_LON  = -75.8814;
+        const DEFAULT_MONTERIA_CITY = 'Montería, Córdoba';
+
+        function initWeatherBaseline() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    function (pos) {
+                        if (lastMqttPacketTime > 0) return; // Si ya llegó telemetría del ESP32, no sobrescribir
+                        const userLat = pos.coords.latitude;
+                        const userLon = pos.coords.longitude;
+                        fetchRealWeather(userLat, userLon, 'Ubicación Local');
+                    },
+                    function (err) {
+                        console.info('[AetherSens] Permiso de geolocalización no otorgado (' + err.message + '). Usando Montería, Córdoba como referencia.');
+                        if (lastMqttPacketTime > 0) return;
+                        fetchRealWeather(DEFAULT_MONTERIA_LAT, DEFAULT_MONTERIA_LON, DEFAULT_MONTERIA_CITY);
+                    },
+                    { timeout: 5000, maximumAge: 300000 }
+                );
+            } else {
+                fetchRealWeather(DEFAULT_MONTERIA_LAT, DEFAULT_MONTERIA_LON, DEFAULT_MONTERIA_CITY);
+            }
+        }
+
+        async function fetchRealWeather(lat, lon, cityName) {
+            try {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature&timezone=auto`;
+                const res = await fetch(url);
+                if (!res.ok) return;
+                const data = await res.json();
+
+                // Si ya llegó telemetría real del ESP32, no sobrescribir
+                if (lastMqttPacketTime > 0) return;
+
+                const weatherTemp = parseFloat(data.current.temperature_2m);
+                const weatherHum  = parseFloat(data.current.relative_humidity_2m);
+                const weatherHeat = parseFloat(data.current.apparent_temperature);
+
+                currentTemp = weatherTemp;
+                currentHum  = weatherHum;
+
+                // 1. Temperatura
+                const tempEl = document.getElementById('metric-temp-val');
+                if (tempEl) tempEl.textContent = weatherTemp.toFixed(1);
+                const tempStatus = evaluateTempStatus(weatherTemp);
+                updateCardStatus('metric-temp-badge', tempStatus);
+
+                // 2. Humedad Relativa
+                const humEl = document.getElementById('metric-hum-val');
+                if (humEl) humEl.textContent = weatherHum.toFixed(1);
+                const humStatus = evaluateHumStatus(weatherHum);
+                updateCardStatus('metric-hum-badge', humStatus);
+
+                // 3. Sensación Térmica
+                const heatEl = document.getElementById('metric-heat-val');
+                if (heatEl) heatEl.textContent = weatherHeat.toFixed(1);
+                const heatStatus = evaluateTempStatus(weatherHeat);
+                updateCardStatus('metric-heat-badge', heatStatus);
+
+                // 4. Ubicación y Estado
+                const zoneEl = document.getElementById('esp32-zone-text');
+                if (zoneEl) zoneEl.textContent = cityName;
+
+                const statusText = document.getElementById('esp32-status-text');
+                if (statusText && lastMqttPacketTime === 0) {
+                    statusText.textContent = 'Clima: ' + cityName + ' (Esperando ESP32)';
+                }
+
+                // 5. Poblar serie de tiempo inicial de la gráfica con estos datos reales
+                const now = Date.now();
+                tempSeriesData = [];
+                humSeriesData  = [];
+                for (let i = maxPoints - 1; i >= 0; i--) {
+                    const t = now - (i * 3000);
+                    const tVal = parseFloat((weatherTemp + Math.sin(i / 2) * 0.15).toFixed(1));
+                    const hVal = parseFloat((weatherHum + Math.cos(i / 2) * 0.4).toFixed(1));
+                    tempSeriesData.push([t, tVal]);
+                    humSeriesData.push([t, hVal]);
+                }
+
+                if (chart) {
+                    chart.updateSeries([
+                        { name: 'Temperatura', data: tempSeriesData },
+                        { name: 'Humedad', data: humSeriesData }
+                    ], false);
+                }
+
+                console.log(`[AetherSens] Clima ambiental de referencia (${cityName}) cargado: ${weatherTemp}°C | ${weatherHum}% RH | ST: ${weatherHeat}°C`);
+            } catch (e) {
+                console.warn('[AetherSens] Error obteniendo clima Open-Meteo:', e);
+            }
         }
 
         function pushPointToChart(temp, hum, timestampMs = Date.now()) {
@@ -586,8 +745,10 @@
 
             const isHttps = window.location.protocol === 'https:';
             // En desarrollo local (HTTP) el puerto 8000 (ws) es más rápido y compatible; en HTTPS se usa 8884 (wss)
-            let brokerUrl = isHttps ? 'wss://broker.hivemq.com:8884/mqtt' : 'ws://broker.hivemq.com:8000/mqtt';
-            const TOPIC   = 'pas_iot/datacenter/telemetria';
+            const brokerHost = appSettings.brokerHost || 'broker.hivemq.com';
+            const brokerPort = isHttps ? (appSettings.brokerPort || 8884) : 8000;
+            let brokerUrl = isHttps ? `wss://${brokerHost}:${brokerPort}/mqtt` : `ws://${brokerHost}:${brokerPort}/mqtt`;
+            const TOPIC   = appSettings.topic || 'pas_iot/datacenter/telemetria';
 
             const dot  = document.getElementById('esp32-status-dot');
             const text = document.getElementById('esp32-status-text');
@@ -625,7 +786,7 @@
                 if (connectionAttempts === 2 && !brokerUrl.includes('8884')) {
                     console.warn('[AetherSens] Alternando a puerto seguro WSS 8884...');
                     client.end(true);
-                    brokerUrl = 'wss://broker.hivemq.com:8884/mqtt';
+                    brokerUrl = `wss://${brokerHost}:8884/mqtt`;
                     setTimeout(connectMqtt, 1000);
                     return;
                 }
@@ -651,17 +812,16 @@
                     if (dot) dot.className = 'w-2 h-2 rounded-full bg-tertiary animate-pulse';
                     if (text) text.textContent = 'ESP32 Sincronizado (' + timeUtc5 + ')';
 
+                    const watchdogSeconds = Number(appSettings.watchdog || 10);
                     clearTimeout(watchdogTimer);
                     watchdogTimer = setTimeout(function () {
                         if (dot) dot.className = 'w-2 h-2 rounded-full bg-secondary';
-                        if (text) text.textContent = 'ESP32 Sin señal reciente (>10s)';
-                    }, 10000);
+                        if (text) text.textContent = `ESP32 Sin señal reciente (>${watchdogSeconds}s)`;
+                    }, watchdogSeconds * 1000);
 
-                    // Zona
-                    if (payload.zona) {
-                        const zoneEl = document.getElementById('esp32-zone-text');
-                        if (zoneEl) zoneEl.textContent = payload.zona;
-                    }
+                    // Zona ESP32
+                    const zoneEl = document.getElementById('esp32-zone-text');
+                    if (zoneEl) zoneEl.textContent = payload.zona || appSettings.zona || 'Zona A';
 
                     // 1. Temperatura
                     let temp = null;
@@ -671,7 +831,7 @@
                         const tempEl = document.getElementById('metric-temp-val');
                         if (tempEl) tempEl.textContent = temp.toFixed(1);
 
-                        const status = (temp >= 18 && temp <= 24) ? 'normal' : (temp > 28 || temp < 15 ? 'critical' : 'warning');
+                        const status = evaluateTempStatus(temp);
                         updateCardStatus('metric-temp-badge', status);
                         addLogTableRow('Temperatura Ambiente', temp.toFixed(1), '°C', status, timeUtc5);
                     }
@@ -685,7 +845,7 @@
                         const humEl = document.getElementById('metric-hum-val');
                         if (humEl) humEl.textContent = hum.toFixed(1);
 
-                        const status = (hum >= 40 && hum <= 55) ? 'normal' : (hum > 70 || hum < 30 ? 'critical' : 'warning');
+                        const status = evaluateHumStatus(hum);
                         updateCardStatus('metric-hum-badge', status);
                         addLogTableRow('Humedad Relativa', hum.toFixed(1), '% RH', status, timeUtc5);
                     }
@@ -696,7 +856,7 @@
                         const heatEl = document.getElementById('metric-heat-val');
                         if (heatEl) heatEl.textContent = heat.toFixed(1);
 
-                        const status = (heat >= 18 && heat <= 25) ? 'normal' : (heat > 29 ? 'critical' : 'warning');
+                        const status = evaluateTempStatus(heat);
                         updateCardStatus('metric-heat-badge', status);
                     }
 

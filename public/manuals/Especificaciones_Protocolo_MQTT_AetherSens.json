@@ -1,0 +1,35 @@
+{
+  "system": "AetherSens Enterprise Telemetry",
+  "version": "2.4",
+  "protocol": "MQTT v3.1.1 / WebSockets",
+  "broker": {
+    "host": "broker.hivemq.com",
+    "ports": {
+      "tcp_standard": 1883,
+      "tcp_tls": 8883,
+      "ws_development": 8000,
+      "wss_production": 8884
+    },
+    "path": "/mqtt"
+  },
+  "topics": {
+    "telemetry": "pas_iot/datacenter/telemetria",
+    "alerts": "pas_iot/datacenter/alertas",
+    "status": "pas_iot/datacenter/status"
+  },
+  "sample_payload": {
+    "temperatura": 21.8,
+    "humedad": 46.5,
+    "sensacion_termica": 22.1,
+    "humo_ppm": 0,
+    "zona": "Zona A - Sala de Racks (Montería)",
+    "timestamp": "2026-10-31T18:45:00-05:00",
+    "device_id": "ESP32_SRV_RACK_01",
+    "wifi_rssi_dbm": -58
+  },
+  "timing": {
+    "sampling_rate_seconds": 3,
+    "watchdog_timeout_seconds": 10
+  }
+}
+

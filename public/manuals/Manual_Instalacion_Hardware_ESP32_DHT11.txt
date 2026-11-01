@@ -1,0 +1,56 @@
+================================================================================
+AETHERSENS - MANUAL DE INSTALACIÓN Y CONEXIONADO DE HARDWARE IOT
+Microcontrolador ESP32 DevKit v1 + Sensor DHT11 / MQ-2 para Racks
+================================================================================
+
+1. COMPONENTES REQUERIDOS
+--------------------------------------------------------------------------------
+- 1x Tarjeta ESP32 NodeMCU DevKit v1 (30 o 38 pines).
+- 1x Sensor digital de Temperatura y Humedad DHT11 (o DHT22 para mayor precisión).
+- 1x Resistencia Pull-up de 4.7 kΩ o 10 kΩ (entre VCC y DATA del DHT11).
+- 1x Sensor de gas y humo MQ-2 (salida analógica A0).
+- Fuente de alimentación conmutada de 5V DC 2A con filtrado de ruido.
+- Cable trenzado apantallado (STP) para mitigar interferencias electromagnéticas (EMI)
+  procedentes de fuentes conmutadas de servidores vecinos.
+
+2. ESQUEMA DE CONEXIONADO (PINOUT)
+--------------------------------------------------------------------------------
+[ ESP32 DevKit v1 ]       [ Sensor DHT11 ]
+- Pin 3V3 o VIN (5V) ---> Pin VCC (Pin 1)
+- Pin GPIO 4 ----------> Pin DATA (Pin 2)  [Conectar R=10kΩ hacia 3.3V]
+- Pin GND -------------> Pin GND (Pin 4)
+
+[ ESP32 DevKit v1 ]       [ Sensor MQ-2 (Humo) ]
+- Pin VIN (5V) --------> Pin VCC
+- Pin GPIO 34 (ADC6) --> Pin AOUT (Salida Analógica)
+- Pin GND -------------> Pin GND
+
+3. UBICACIÓN FÍSICA EN EL GABINETE / RACK
+--------------------------------------------------------------------------------
+- Monte el nodo ESP32 en un riel DIN o caja ignífuga en la parte frontal superior
+  (o central a 1.5m de altura / unidad 22U) del pasillo frío.
+- EVITE colocar los sensores inmediatamente después de la tobera de inyección del aire,
+  ya que registrarán falsas temperaturas mínimas que no representan la entrada al servidor.
+- Mantenga el sensor de humo en la parte superior del rack (unidad 42U) para aprovechar
+  la convección natural de humos ascendentes.
+
+4. CONFIGURACIÓN DEL FIRMWARE (ARDUINO / ESP-IDF)
+--------------------------------------------------------------------------------
+- Broker MQTT: broker.hivemq.com
+- Puerto TCP / SSL: 1883 (o 8883 con certificado TLS)
+- Tópico de Publicación: pas_iot/datacenter/telemetria
+- Estructura JSON enviada en cada ciclo:
+  {
+    "temperatura": 22.4,
+    "humedad": 48.0,
+    "sensacion_termica": 22.8,
+    "humo_ppm": 0,
+    "zona": "Zona A - Racks Principales",
+    "uptime_ms": 142850
+  }
+- Cadencia de muestreo recomendada: 3000 ms (3 segundos).
+
+================================================================================
+AetherSens IoT Division - Especificaciones de Hardware
+================================================================================
+

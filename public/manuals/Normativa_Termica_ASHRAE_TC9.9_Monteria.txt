@@ -1,0 +1,42 @@
+================================================================================
+AETHERSENS - NORMATIVA TÉRMICA ASHRAE TC 9.9 Y CLIMATIZACIÓN EN MONTERÍA
+Especificaciones para Centro de Cómputo en Clima Cálido y Tropical
+================================================================================
+
+1. CONTEXTO AMBIENTAL DE MONTERÍA (CÓRDOBA, COLOMBIA)
+--------------------------------------------------------------------------------
+Montería se sitúa a 18 m.s.n.m. en el valle del Sinú, caracterizándose por temperaturas
+ambiente medias que oscilan entre 28°C y 38°C a la sombra y humedades relativas que
+habitualmente superan el 75% - 85% RH.
+En este entorno geográfico, la climatización de salas de servidores presenta dos
+desafíos contrapuestos:
+a) Carga térmica elevada proveniente del exterior y disipación de servidores.
+b) Riesgo extremo de condensación por punto de rocío elevado en aire húmedo.
+
+2. ¿POR QUÉ LA TEMPERATURA MÍNIMA OPERATIVA ES 18.0 °C Y NO 16.0 °C?
+--------------------------------------------------------------------------------
+Los equipos de aire acondicionado split comerciales o de confort permiten configurar
+un setpoint de hasta 16°C. Sin embargo, en un centro de datos:
+1. CONDENSACIÓN Y PUNTO DE ROCÍO: A 28°C y 80% RH en el exterior, si el aire de la sala
+   o el chasis de los servidores desciende a 16°C, cualquier infiltración de aire ambiente
+   provoca la condensación inmediata de agua líquida sobre tarjetas electrónicas,
+   módulos de memoria RAM y sockets PCIe, provocando cortocircuitos catastróficos.
+2. CONGELAMIENTO DEL EVAPORADOR: Operar unidades de aire split continuamente a 16°C
+   en climas cálidos y húmedos provoca escarcha y hielo en las aletas del evaporador,
+   bloqueando el flujo de aire y provocando la rotura del compresor.
+3. ESTÁNDAR ASHRAE TC 9.9 (Thermal Guidelines for Data Processing Environments):
+   La clase A1 recomienda rigurosamente una temperatura de entrada al servidor entre
+   18.0 °C y 27.0 °C (con temperatura óptima de operación fijada en 18°C – 24°C).
+
+3. TABLA DE UMBRALES CALIBRADOS EN AETHERSENS
+--------------------------------------------------------------------------------
+VARIABLE          | ÓPTIMO (NORMAL) | ADVERTENCIA      | CRÍTICO
+--------------------------------------------------------------------------------
+Temperatura       | 18.0°C – 24.0°C | 24.1°C – 27.9°C  | >= 28.0°C o < 15.0°C
+Humedad Relativa  | 40% – 60% RH    | 30%–39% / 61%–74%| >= 75% o < 25% RH
+Diferencial (ΔT)  | 6.0°C – 10.0°C  | > 12.0°C         | > 15.0°C (Hotspot)
+
+================================================================================
+AetherSens Datacenter Infrastructure - ASHRAE TC 9.9 Compliance
+================================================================================
+

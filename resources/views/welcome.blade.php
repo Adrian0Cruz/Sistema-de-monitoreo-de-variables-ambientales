@@ -34,10 +34,10 @@
 
             {{-- Center links (hidden on mobile) --}}
             <div class="hidden md:flex items-center gap-space-xl text-on-surface-variant font-body-md text-body-md">
-                <a href="#" class="hover:text-on-surface transition-colors">Plataforma</a>
-                <a href="#" class="hover:text-on-surface transition-colors">Zonas & Racks</a>
-                <a href="#" class="hover:text-on-surface transition-colors">Telemetría Activa</a>
-                <a href="#" class="hover:text-on-surface transition-colors">Ayuda / Docs</a>
+                <a href="#plataforma" class="hover:text-on-surface transition-colors">Plataforma</a>
+                <a href="#zonas-racks" class="hover:text-on-surface transition-colors">Zonas & Racks</a>
+                <a href="#telemetria" class="hover:text-on-surface transition-colors">Telemetría Activa</a>
+                <a href="{{ route('docs') }}" class="hover:text-on-surface transition-colors">Ayuda / Docs</a>
             </div>
 
             {{-- Right actions --}}
@@ -141,7 +141,7 @@
                         </a>
                     @endauth
 
-                    <a href="#"
+                    <a href="#telemetria"
                        class="inline-flex items-center justify-center gap-space-xs px-6 py-3.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors">
                         <span class="material-symbols-outlined text-outline text-[18px]">equalizer</span>
                         <span>Inspeccionar Nodos</span>
@@ -163,7 +163,7 @@
         {{-- ======================================================== --}}
         {{-- ASHRAE BASELINES PANEL                                    --}}
         {{-- ======================================================== --}}
-        <section class="w-full max-w-[1600px] mx-auto px-margin-md md:px-margin-lg mb-16">
+        <section id="telemetria" class="w-full max-w-[1600px] mx-auto px-margin-md md:px-margin-lg mb-16 scroll-mt-20">
             <div class="bg-surface-container rounded-xl p-space-lg shadow-sm">
 
                 {{-- Panel Header --}}
@@ -273,7 +273,7 @@
         {{-- ======================================================== --}}
         {{-- FEATURE CARDS: System Capabilities                        --}}
         {{-- ======================================================== --}}
-        <section class="w-full max-w-[1600px] mx-auto px-margin-md md:px-margin-lg mb-20">
+        <section id="plataforma" class="w-full max-w-[1600px] mx-auto px-margin-md md:px-margin-lg mb-20 scroll-mt-20">
             <div class="mb-space-lg text-left">
                 <span class="font-label-sm text-label-sm text-primary uppercase tracking-widest block font-medium">Arquitectura de Operación</span>
                 <h2 class="font-headline-lg text-headline-lg text-on-surface">Capacidades del Sistema Central</h2>
@@ -350,7 +350,7 @@
         {{-- ======================================================== --}}
         {{-- THERMAL CONTAINMENT SECTION                               --}}
         {{-- ======================================================== --}}
-        <section class="w-full max-w-[1600px] mx-auto px-margin-md md:px-margin-lg mb-20">
+        <section id="zonas-racks" class="w-full max-w-[1600px] mx-auto px-margin-md md:px-margin-lg mb-20 scroll-mt-20">
             <div class="bg-surface-container-low rounded-xl p-space-lg md:p-12 flex flex-col lg:flex-row items-center justify-between gap-space-xl">
                 <div class="text-left max-w-4xl">
                     <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest block font-medium mb-space-xs">Infraestructura Física</span>

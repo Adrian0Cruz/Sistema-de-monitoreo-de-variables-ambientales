@@ -12,9 +12,24 @@
 }
 
 @layer base {
-    /* Eliminar el caret o punto de inserción de forma global y absoluta en todas las vistas */
+    /* Eliminar el caret o punto de inserción en elementos no editables de la interfaz */
     *, *::before, *::after {
         caret-color: transparent !important;
+    }
+
+    /* Restaurar el caret exclusivamente en campos interactivos editables (textfield, passwordfield, etc.) */
+    input,
+    textarea,
+    [contenteditable="true"] {
+        caret-color: #a4c9ff !important;
+    }
+
+    /* Ocultar el icono nativo de revelar contraseña del navegador (Edge / Chromium) para evitar duplicados */
+    input[type="password"]::-ms-reveal,
+    input[type="password"]::-ms-clear {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
     }
 
     body {
