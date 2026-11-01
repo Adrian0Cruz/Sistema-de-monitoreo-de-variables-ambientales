@@ -8,6 +8,10 @@
     <title>{{ config('app.name', 'AetherSens') }} - {{ $title ?? 'Panel de Control' }}</title>
     <meta name="description" content="AetherSens – Monitoreo ambiental en tiempo real para salas de servidores y racks de telecomunicaciones.">
 
+    {{-- Favicon para todas las vistas --}}
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon.png') }}">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     {{-- Geist via Fontshare --}}
@@ -44,7 +48,7 @@
 
             {{-- Nav Section Label --}}
             <div class="px-space-md pt-space-lg pb-space-xs">
-                <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Operational Menu</span>
+                <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Menú Operacional</span>
             </div>
 
             {{-- Navigation Links --}}
@@ -57,7 +61,7 @@
                         : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
                     href="{{ route('dashboard') }}">
                     <span class="material-symbols-outlined text-[18px]">dashboard</span>
-                    <span>Dashboard</span>
+                    <span>Panel de Control</span>
                 </a>
 
                 {{-- Historical Data --}}
@@ -67,7 +71,7 @@
                         : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
                     href="{{ route('historical-data') }}">
                     <span class="material-symbols-outlined text-[18px]">show_chart</span>
-                    <span>Historical Data</span>
+                    <span>Historial de Datos</span>
                 </a>
 
                 {{-- Alert Logs --}}
@@ -77,7 +81,7 @@
                         : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
                     href="{{ route('alert-logs') }}">
                     <span class="material-symbols-outlined text-[18px]">warning</span>
-                    <span>Alert Logs</span>
+                    <span>Registro de Alertas</span>
                 </a>
 
                 {{-- Settings --}}
@@ -87,7 +91,17 @@
                         : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
                     href="{{ route('settings') }}">
                     <span class="material-symbols-outlined text-[18px]">tune</span>
-                    <span>Settings</span>
+                    <span>Configuración</span>
+                </a>
+
+                {{-- Help & Docs --}}
+                <a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg transition-colors font-body-md text-body-md
+                    {{ request()->routeIs('docs')
+                        ? 'bg-surface-container-high text-primary font-medium'
+                        : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
+                    href="{{ route('docs') }}">
+                    <span class="material-symbols-outlined text-[18px]">menu_book</span>
+                    <span>Ayuda y Manuales</span>
                 </a>
 
             </nav>
@@ -96,7 +110,7 @@
         {{-- Telemetry Core Diagnostics (bottom) --}}
         <div class="p-space-md border-t border-outline-variant bg-surface-container-lowest/60 shrink-0">
             <div class="flex items-center justify-between mb-space-xs">
-                <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Telemetry Core</span>
+                <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Núcleo de Telemetría</span>
                 <span class="flex h-2 w-2 relative">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2 w-2 bg-tertiary"></span>
@@ -109,7 +123,7 @@
                 </div>
                 <div class="flex justify-between">
                     <span class="text-outline">Broker:</span>
-                    <span class="text-tertiary">Node MQTT [Active]</span>
+                    <span class="text-tertiary">Nodo MQTT [Activo]</span>
                 </div>
             </div>
         </div>
@@ -127,13 +141,13 @@
                 <div class="flex items-center gap-space-sm">
                     <span class="font-headline-sm text-headline-sm text-on-surface">AetherSens</span>
                     <span class="text-outline">/</span>
-                    <span class="font-body-md text-body-md text-on-surface-variant">Server Room Monitor</span>
+                    <span class="font-body-md text-body-md text-on-surface-variant">Monitoreo de Sala de Servidores</span>
                 </div>
 
                 {{-- Zone Selector Chip --}}
                 <div class="relative flex items-center bg-surface-container-high border border-outline-variant rounded-lg px-space-md py-1.5 cursor-pointer hover:bg-surface-container-highest transition-colors">
                     <span class="material-symbols-outlined text-[16px] text-outline mr-1.5">location_on</span>
-                    <span class="font-label-md text-label-md text-on-surface pr-space-md">Zone A</span>
+                    <span class="font-label-md text-label-md text-on-surface pr-space-md">Zona A</span>
                     <span class="material-symbols-outlined text-[16px] text-outline">expand_more</span>
                 </div>
             </div>
@@ -144,7 +158,7 @@
                 {{-- ESP32 Connection Pill --}}
                 <div class="flex items-center gap-2 bg-surface-container px-space-md py-1.5 rounded-full border border-tertiary/30">
                     <div class="w-2 h-2 rounded-full bg-tertiary"></div>
-                    <span class="font-code-sm text-code-sm text-tertiary">ESP32: Connected (MQTT / Livewire)</span>
+                    <span class="font-code-sm text-code-sm text-tertiary">ESP32: Conectado (MQTT / Livewire)</span>
                 </div>
 
                 <div class="h-4 w-px bg-outline-variant"></div>
@@ -171,7 +185,7 @@
                         </div>
                         <div class="flex flex-col text-left">
                             <span class="font-label-md text-label-md text-on-surface leading-none">{{ Auth::user()->name ?? 'Usuario' }}</span>
-                            <span class="font-label-sm text-label-sm text-outline leading-tight mt-0.5">Admin</span>
+                            <span class="font-label-sm text-label-sm text-outline leading-tight mt-0.5">Administrador</span>
                         </div>
                     </button>
 

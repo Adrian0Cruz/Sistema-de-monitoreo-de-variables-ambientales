@@ -1,8 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+        <h1 class="font-headline-lg text-headline-lg font-bold text-on-surface">
             {{ __('API Tokens') }}
-        </h2>
+        </h1>
     </x-slot>
 
     <div>

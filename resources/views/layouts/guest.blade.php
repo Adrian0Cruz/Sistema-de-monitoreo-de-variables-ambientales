@@ -8,6 +8,10 @@
     <title>{{ config('app.name', 'AetherSens') }} – {{ $title ?? 'Acceso' }}</title>
     <meta name="description" content="AetherSens – Sistema de monitoreo ambiental para salas de servidores.">
 
+    {{-- Favicon para todas las vistas --}}
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon.png') }}">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     {{-- Geist via Fontshare --}}
@@ -37,7 +41,7 @@
             {{-- Node status pill --}}
             <div class="flex items-center gap-space-xs text-on-surface-variant font-code-sm text-code-sm">
                 <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
-                <span class="tracking-wide uppercase">NODE 01 NOMINAL</span>
+                <span class="tracking-wide uppercase">NODO 01 NOMINAL</span>
             </div>
 
             {{-- User icon (decorative) --}}
@@ -56,7 +60,7 @@
     {{-- ===================== FOOTER ===================== --}}
     <footer class="w-full bg-surface-container-lowest py-space-md shadow-[0_-1px_8px_rgba(0,0,0,0.1)]">
         <div class="max-w-7xl mx-auto px-margin-md text-center text-on-surface-variant font-body-sm text-body-sm tracking-wide">
-            AetherSens Internal Operations &bull; Telemetry System
+            AetherSens Operaciones Internas &bull; Sistema de Telemetría
         </div>
     </footer>
 
