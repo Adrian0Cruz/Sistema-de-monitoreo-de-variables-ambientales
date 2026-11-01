@@ -1,1 +1,10 @@
-*.sqlite*
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.sql
+*.sql.gz
+*.dump
+*.bak
+!.gitignore

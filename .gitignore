@@ -1,27 +1,175 @@
-*.log
-.DS_Store
+# ==============================================================================
+# AETHERSENS - GITIGNORE REPOSITORIO DE CONTROL DE VERSIONES
+# Reglas estrictas de sanitización para despliegues y repositorios GitHub
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Variables de Entorno, Credenciales y Secretos
+# ------------------------------------------------------------------------------
 .env
+.env.*
+!.env.example
 .env.backup
 .env.production
-.phpactor.json
-.phpunit.result.cache
-/.codex
-/.cursor/
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
-/node_modules
-/public/build
-/public/fonts-manifest.dev.json
+.env.local
+.env.testing
+.env.stage
+.env.staging
+
+auth.json
+oauth-private.key
+oauth-public.key
+*.key
+*.pem
+*.crt
+*.cer
+*.pfx
+*.p12
+/storage/*.key
+
+# ------------------------------------------------------------------------------
+# 2. Dependencias y Paquetes de Terceros
+# ------------------------------------------------------------------------------
+/node_modules/
+/vendor/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+package-lock.json.backup
+
+# ------------------------------------------------------------------------------
+# 3. Compilación Frontend y Activos Temporales
+# ------------------------------------------------------------------------------
+/public/build/
 /public/hot
 /public/storage
-/storage/*.key
+/public/fonts-manifest.dev.json
+.vite/
+.parcel-cache/
+
+# ------------------------------------------------------------------------------
+# 4. Bases de Datos Locales, Respaldos y Dumps
+# ------------------------------------------------------------------------------
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.sql
+*.sql.gz
+*.dump
+*.bak
+/database/*.sqlite
+/database/*.sqlite-journal
+/database/*.sqlite-shm
+/database/*.sqlite-wal
+/database/*.sql
+/database/*.sql.gz
+
+# ------------------------------------------------------------------------------
+# 5. Archivos de Almacenamiento, Logs y Caché de Laravel
+# ------------------------------------------------------------------------------
+*.log
+/storage/logs/*
+!storage/logs/.gitignore
+
+/storage/framework/cache/data/*
+!storage/framework/cache/data/.gitignore
+
+/storage/framework/sessions/*
+!storage/framework/sessions/.gitignore
+
+/storage/framework/views/*
+!storage/framework/views/.gitignore
+
+/storage/framework/testing/*
+!storage/framework/testing/.gitignore
+
+/storage/app/*
+!storage/app/.gitignore
+!storage/app/public/
+!storage/app/private/
+
+/storage/app/public/*
+!storage/app/public/.gitignore
+
+/storage/app/private/*
+!storage/app/private/.gitignore
+
+/storage/app/settings.json
 /storage/pail
-/vendor
+
+/bootstrap/cache/*.php
+!bootstrap/cache/.gitignore
+
+# ------------------------------------------------------------------------------
+# 6. Editores de Código y Entornos de Desarrollo (IDEs)
+# ------------------------------------------------------------------------------
+.idea/
+.vscode/
+.cursor/
+.codex/
+.zed/
+.nova/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.project
+.buildpath
+.settings/
+nbproject/
+.phpactor.json
 _ide_helper.php
+_ide_helper_models.php
+.phpstorm.meta.php
 Homestead.json
 Homestead.yaml
+
+# ------------------------------------------------------------------------------
+# 7. Archivos Residuales del Sistema Operativo
+# ------------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
 Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+.fuse_hidden*
+
+# ------------------------------------------------------------------------------
+# 8. Pruebas, Cobertura y Métricas QA
+# ------------------------------------------------------------------------------
+.phpunit.result.cache
+/.phpunit.cache/
+.pest/
+/coverage/
+*.coverage
+html-coverage/
+.php-cs-fixer.cache
+
+# ------------------------------------------------------------------------------
+# 9. Archivos Temporales y Scripts Scratch
+# ------------------------------------------------------------------------------
+scratch/
+scratch_*.php
+temp/
+tmp/
+*.tmp
+*.temp
