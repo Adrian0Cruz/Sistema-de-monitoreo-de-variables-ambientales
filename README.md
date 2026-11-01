@@ -1,59 +1,155 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# AetherSens Enterprise &bull; Plataforma de Telemetría Ambiental IoT
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+[![Status: Producción](https://img.shields.io/badge/Estado-Producci%C3%B3n-00c853.svg)](https://github.com)
+[![PHP: ^8.3](https://img.shields.io/badge/PHP-%5E8.3-777bb4.svg)](https://php.net)
+[![Laravel: 13.x](https://img.shields.io/badge/Laravel-13.x-ff2d20.svg)](https://laravel.com)
+[![Livewire: 3.x](https://img.shields.io/badge/Livewire-3.x-fb70a9.svg)](https://livewire.laravel.com)
+[![MQTT: HiveMQ](https://img.shields.io/badge/MQTT-HiveMQ%20Broker-00b0ff.svg)](https://hivemq.com)
+[![Normativa: ASHRAE TC 9.9](https://img.shields.io/badge/Normativa-ASHRAE%20TC%209.9-ffb300.svg)](https://tc0909.ashraetcs.org)
 
-## About Laravel
+**AetherSens** es una plataforma integral de supervisión, auditoría y alerta temprana en tiempo real para centros de datos, cuartos de telecomunicaciones y salas de servidores. Diseñada específicamente para operar de forma resiliente bajo las condiciones climáticas extremas de **Montería (Córdoba, Colombia)**, integrando microcontroladores **ESP32**, sensores digitales **DHT11**, sensores de humo/gases **MQ-2** y transporte de telemetría de ultra-baja latencia sobre **MQTT**.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🏛️ Arquitectura del Sistema
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```text
+  [ Sensor DHT11 (Temp/Hum) ]
+             +
+  [ Sensor MQ-2 (Humo/Gas)  ]
+             │
+             ▼  (GPIO 4 / ADC 34)
+   ┌───────────────────────┐
+   │  ESP32 DevKit v1      │ ── Cadencia: 3s (Cálculo Heat Index)
+   └───────────────────────┘
+             │  (WiFi WPA2 Enterprise / VLAN 402)
+             ▼
+   ┌───────────────────────┐
+   │ Broker MQTT (HiveMQ)  │ ── Host: broker.hivemq.com
+   │ (Puerto 8884 WSS/TLS) │ ── Tópico: pas_iot/datacenter/telemetria
+   └───────────────────────┘
+             │  (WebSockets seguros en tiempo real)
+             ▼
+   ┌────────────────────────────────────────────────────────┐
+   │             AetherSens Web Dashboard                   │
+   │   Laravel 13 + Livewire 3 + Alpine.js + ApexCharts     │
+   │                                                        │
+   │  - Gráfica dual en tiempo real (UTC -5)                │
+   │  - Tarjetas reactivas de KPI con umbrales dinámicos    │
+   │  - Respaldo de clima real con Open-Meteo (Montería)    │
+   │  - Registro de incidentes y persistencia de ajustes    │
+   └────────────────────────────────────────────────────────┘
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## 🌡️ Calibración Térmica (ASHRAE TC 9.9 - Montería)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+En Montería, la humedad ambiental exterior oscila entre el **70% y el 85% RH** con temperaturas de hasta 38°C. Operar sistemas de aire acondicionado en el setpoint mínimo de 16°C provoca condensación inmediata por **punto de rocío** sobre placas electrónicas y escarcha en los evaporadores.
 
-## Code of Conduct
+Por ello, AetherSens implementa los umbrales recomendados por **ASHRAE TC 9.9 Clase A1**:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| Variable | Rango Óptimo | Advertencia | Nivel Crítico | Justificación Técnica |
+| :--- | :---: | :---: | :---: | :--- |
+| **Temperatura** | **18.0 °C – 24.0 °C** | **24.1 °C – 27.9 °C** | **≥ 28.0 °C** *(o < 15 °C)* | Previene *thermal throttling* en CPU y congelamiento de serpentines. |
+| **Humedad Relativa** | **40.0% – 60.0% RH** | **30%–39% / 61%–74%** | **≥ 75.0%** *(o < 25 %)* | Evita descargas electrostáticas (ESD) y corrosión acelerada. |
+| **Detección de Humo** | **0 PPM (Normal)** | **15 – 49 PPM** | **≥ 50 PPM** | Alerta temprana antes de la ignición por sobrecalentamiento. |
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## ⚡ Especificaciones de Conexión de Hardware (ESP32)
 
-## License
+- **Microcontrolador:** ESP32 NodeMCU DevKit v1 (30/38 pines).
+- **Sensor DHT11:**
+  - `VCC` ──> `3.3V` / `5V`
+  - `DATA` ──> `GPIO 4` (con resistencia pull-up de 10 kΩ a VCC)
+  - `GND` ──> `GND`
+- **Sensor de Humo MQ-2:**
+  - `VCC` ──> `5V` (alimentación de filamento)
+  - `AOUT` ──> `GPIO 34` (Canal ADC analógico)
+  - `GND` ──> `GND`
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-# Sistema-de-monitoreo-de-variables-ambientales
+### Estructura del Payload MQTT (JSON)
+```json
+{
+  "temperatura": 21.8,
+  "humedad": 46.5,
+  "sensacion_termica": 22.1,
+  "humo_ppm": 0,
+  "zona": "Zona A - Sala de Racks (Montería)",
+  "timestamp": "2026-10-31T18:45:00-05:00",
+  "device_id": "ESP32_SRV_RACK_01"
+}
+```
+
+---
+
+## 🚀 Requisitos e Instalación
+
+### Requisitos del Sistema
+- **PHP:** 8.3 o superior (probado en PHP 8.5) con extensiones `pdo_sqlite`, `pdo_mysql`, `mbstring`, `openssl`, `curl`.
+- **Node.js:** 18.x o superior con **NPM**.
+- **Composer:** 2.x.
+- **Base de Datos:** SQLite (desarrollo local) o MariaDB/MySQL (producción).
+
+### Puesta en Marcha Rápida
+
+1. **Clonar el repositorio:**
+   ```bash
+   git clone https://github.com/tu-organizacion/aethersens.git
+   cd aethersens
+   ```
+
+2. **Instalar dependencias de backend y frontend:**
+   ```bash
+   composer install
+   npm install
+   ```
+
+3. **Configurar el entorno:**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+
+4. **Ejecutar migraciones y semillero inicial:**
+   ```bash
+   php artisan migrate --seed
+   ```
+   *Crea el usuario base:* `operador@aethersens.internal` (Contraseña: `password`).
+
+5. **Compilar recursos estáticos de Vite:**
+   ```bash
+   npm run build
+   ```
+
+6. **Iniciar el servidor de desarrollo:**
+   ```bash
+   php artisan serve
+   ```
+   El panel estará accesible en `http://localhost:8000`.
+
+---
+
+## 📂 Módulos de la Plataforma
+
+- **`/` (Landing Page):** Portal institucional con indicadores de salud física, contención de pasillo frío y navegación anclada.
+- **`/dashboard`:** Tablero de supervisión con telemetría en tiempo real, gráfica de doble eje UTC-5 sincronizada, estado del ESP32 y tabla de incidentes recientes.
+- **`/historical-data`:** Análisis retrospectivo y tendencias de temperatura y humedad.
+- **`/alert-logs`:** Registro cronológico de eventos críticos, advertencias y anomalías.
+- **`/settings`:** Configuración persistente en tiempo real de umbrales ambientales, parámetros MQTT y tiempos de watchdog (`storage/app/settings.json` + `localStorage`).
+- **`/docs`:** Centro oficial de documentación y descargas de manuales en texto y esquemas técnicos.
+
+---
+
+## 🔒 Seguridad y Privacidad
+
+- Autenticación multifactorial (2FA / Google Authenticator) y soporte para llaves de seguridad Passkeys.
+- Transmisión telemétrica opcional sobre WSS (WebSockets seguros en puerto 8884 con TLSv1.3).
+- Registro auditado de eventos de sesión conforme a estándares de infraestructura crítica.
+
+---
+
+## 📄 Licencia
+
+Este proyecto está licenciado bajo los términos de la **Licencia MIT**. Consulte el archivo `LICENSE` para más información.

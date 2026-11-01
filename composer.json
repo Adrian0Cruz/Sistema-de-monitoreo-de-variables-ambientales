@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "aethersens/aethersens",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "AetherSens - Plataforma de Supervisión y Telemetría Ambiental para Centros de Datos y Salas de Racks",
+    "keywords": ["aethersens", "telemetry", "iot", "esp32", "datacenter", "monitoring", "ashrae"],
     "license": "MIT",
     "require": {
         "php": "^8.3",
