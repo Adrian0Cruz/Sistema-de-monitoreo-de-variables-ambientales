@@ -1,0 +1,80 @@
+================================================================================
+AETHERSENS - MANUAL DE INSTALACIÓN Y CONEXIONADO DE HARDWARE IOT
+Microcontrolador ESP32 DevKit USB-C + Sensor SHT40 (I2C) / MQ-2 para Sala Técnica
+================================================================================
+
+1. COMPONENTES REQUERIDOS
+--------------------------------------------------------------------------------
+- 1x Tarjeta ESP32 DevKit USB-C (30 o 38 pines).
+- 1x Sensor digital de Temperatura y Humedad SHT40 (bus I2C, dirección 0x44).
+- 1x Sensor de gas y humo MQ-2 (salida analógica AOUT).
+- 1x trio de LEDs (Verde, Amarillo, Rojo) con resistencias limitadoras de 330 Ω.
+- 1x driver/transistor para buzzer de alarma (2N2222 o similar).
+- 1x pulsador industrial Normally Open (NO) con resistencia pull-up de 10 kΩ.
+- Fuente de alimentación conmutada de 5V DC 2A con filtrado de ruido.
+- Cable trenzado apantallado (STP) para mitigar interferencias electromagnéticas (EMI)
+  procedentes de fuentes conmutadas de servidores vecinos.
+
+2. ESQUEMA DE CONEXIONADO (PINOUT)
+--------------------------------------------------------------------------------
+[ ESP32 DevKit USB-C ]     [ Sensor SHT40 (I2C) ]
+- Pin 3V3 --------------> Pin VCC
+- Pin GPIO 21 (SDA) -----> Pin SDA
+- Pin GPIO 22 (SCL) -----> Pin SCL
+- Pin GND ---------------> Pin GND
+
+[ ESP32 DevKit USB-C ]     [ Sensor MQ-2 (Gas/Humo) ]
+- Pin VIN (5V) ----------> Pin VCC
+- Pin GPIO 34 (ADC1_CH6) -> Pin AOUT (Salida Analógica)
+- Pin GND ---------------> Pin GND
+
+[ ESP32 DevKit USB-C ]     [ Semáforo / Actuadores ]
+- Pin GPIO 25 -----------> LED Verde   (Estado Normal)     [R=330 Ω a GND]
+- Pin GPIO 32 -----------> LED Amarillo (Advertencia)    [R=330 Ω a GND]
+- Pin GPIO 33 -----------> LED Rojo    (Crítico / Humo)   [R=330 Ω a GND]
+- Pin GPIO 26 -----------> Driver/Transistor del Buzzer (base con R=1 kΩ)
+- Pin GPIO 27 -----------> Pulsador industrial NO (a GND, INPUT_PULLUP interno)
+- Pin GND ---------------> Cátodo común de los LED / emisor del transistor
+
+3. UMBRALES DE OPERACIÓN (coinciden con el firmware)
+--------------------------------------------------------------------------------
+- TEMP_UMBRAL_ADVERTENCIA = 28.0 °C   -> LED Amarillo
+- TEMP_UMBRAL_CRITICO     = 35.0 °C   -> LED Rojo + Buzzer
+- MQ2_UMBRAL_HUMO         = 1500 ADC  -> Estado HUMO_DETECTADO (LED Rojo + Buzzer)
+- El LED Rojo en estado crítico NO se apaga; solo el buzzer puede silenciarse
+  con el pulsador industrial NO (silenciamiento temporal, se rearma al normalizar).
+- La lógica de alarma es local y edge-first: la caída de Wi-Fi o del broker MQTT
+  nunca detiene el semáforo ni el buzzer.
+
+4. CONFIGURACIÓN DEL FIRMWARE (ARDUINO / ESP-IDF)
+--------------------------------------------------------------------------------
+- Broker MQTT: broker.hivemq.com
+- Puerto TCP / SSL: 1883 (o 8883 con certificado TLS)
+- Tópicos de publicación:
+  - Telemetría: intalnet/sala01/telemetria
+  - Estado:     intalnet/sala01/estado
+  - Alertas:    intalnet/sala01/alerta
+- Estructura JSON enviada en la telemetría cada ciclo:
+  {
+    "temperatura": 29.7,
+    "humedad_relativa": 58.1,
+    "nivel_gas": 1420,
+    "estado": "ADVERTENCIA",
+    "silenciado": false,
+    "uptime_s": 98765
+  }
+- Valores posibles de "estado": NORMAL, ADVERTENCIA, CRITICO, HUMO_DETECTADO.
+- Tópico de estado (retained): {"dispositivo":"ESP32_SALA01","estado":"ONLINE"}
+- Tópico de alertas (retained): {"evento":"CAMBIO_ESTADO","nuevo_estado":"CRITICO",
+  "temperatura":31.9,"gas":1495} o {"evento":"SILENCIADO_MANUAL","mensaje":"..."}
+- Cadencia de muestreo recomendada: 3000 ms (3 segundos).
+
+5. CONSUMIR LOS DATOS DESDE EL PANEL WEB
+--------------------------------------------------------------------------------
+- El panel se suscribe por WebSocket al broker: ws://broker.hivemq.com:8000/mqtt
+  (o wss://broker.hivemq.com:8884/mqtt cuando el panel se sirve por HTTPS).
+- Los tópicos, umbrales y puertos se ajustan en la sección "Configuración" del panel.
+
+================================================================================
+AetherSens IoT Division - Especificaciones de Hardware
+================================================================================

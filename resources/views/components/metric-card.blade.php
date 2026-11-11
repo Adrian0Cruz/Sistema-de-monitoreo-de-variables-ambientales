@@ -9,6 +9,7 @@
     'icon'          => 'thermostat',
     'iconColor'     => 'text-primary',
     'valueColor'    => 'text-on-surface',
+    'valueClass'    => '',
     'valueId'       => null,
     'statusBadgeId' => null,
 ])
@@ -46,7 +47,7 @@ $dotClasses = match($status) {
     {{-- Metric Value + Unit --}}
     <div>
         <div class="flex items-baseline gap-2">
-            <span @if($valueId) id="{{ $valueId }}" @endif class="font-display-lg text-display-lg tracking-tight {{ $valueColor }} font-semibold">
+            <span @if($valueId) id="{{ $valueId }}" @endif class="font-display-lg text-display-lg tracking-tight {{ $valueColor }} {{ $valueClass }} font-semibold">
                 {{ $value }}
             </span>
             @if($unit)

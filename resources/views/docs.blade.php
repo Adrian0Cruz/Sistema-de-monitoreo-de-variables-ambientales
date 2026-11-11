@@ -203,13 +203,13 @@
                             Manual de Instalación y Conexionado IoT (ESP32)
                         </h3>
                         <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed mb-6">
-                            Especificaciones eléctricas y físicas de conexionado para técnicos en campo. Incluye asignación de pines GPIO (GPIO 4 para DHT11, pin analógico ADC para MQ-2), resistencia pull-up recomendada (10kΩ), aislamiento electromagnético en racks y montaje en pasillo frío.
+                            Especificaciones eléctricas y físicas de conexionado para técnicos de campo. Incluye asignación de pines GPIO (GPIO 21/22 para el bus I2C del SHT40, GPIO 34 para el ADC del MQ-2), LEDs de semáforo (25/32/33), driver del buzzer (26) y pulsador industrial NO con pull-up (27), aislamiento electromagnético en racks y montaje en pasillo frío.
                         </p>
 
                         <div class="space-y-2 mb-6 font-code-sm text-code-sm text-on-surface-variant bg-surface-container-high/60 p-3.5 rounded-lg border border-outline-variant/20">
                             <div class="flex items-center gap-2">
                                 <span class="material-symbols-outlined text-[16px] text-secondary">check_circle</span>
-                                <span>Diagrama de pinout exacto: ESP32 + DHT11 + MQ-2</span>
+                                <span>Diagrama de pinout exacto: ESP32 + SHT40 + MQ-2</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="material-symbols-outlined text-[16px] text-secondary">check_circle</span>
@@ -224,7 +224,7 @@
 
                     <div class="pt-4 border-t border-outline-variant/30 flex items-center justify-between">
                         <span class="font-body-sm text-body-sm text-outline">Actualizado: Octubre 2026</span>
-                        <a href="{{ asset('manuals/Manual_Instalacion_Hardware_ESP32_DHT11.txt') }}" download
+                        <a href="{{ asset('manuals/Manual_Instalacion_Hardware_ESP32_SHT40.txt') }}" download
                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-secondary hover:bg-secondary/90 text-on-secondary font-label-md text-label-md font-medium transition-colors cursor-pointer shadow-md">
                             <span class="material-symbols-outlined text-[18px]">download</span>
                             <span>Descargar Ficha Hardware</span>
@@ -303,7 +303,11 @@
                         <div class="space-y-2 mb-6 font-code-sm text-code-sm text-on-surface-variant bg-surface-container-high/60 p-3.5 rounded-lg border border-outline-variant/20">
                             <div class="flex items-center gap-2">
                                 <span class="material-symbols-outlined text-[16px] text-primary">check_circle</span>
-                                <span>Tópico principal: <code class="text-primary font-bold">pas_iot/datacenter/telemetria</code></span>
+                                <span>Tópico de telemetría: <code class="text-primary font-bold">intalnet/sala01/telemetria</code></span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[16px] text-primary">check_circle</span>
+                                <span>Tópico de estado: <code class="text-primary font-bold">intalnet/sala01/estado</code> &middot; Tópico de alertas: <code class="text-primary font-bold">intalnet/sala01/alerta</code></span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="material-symbols-outlined text-[16px] text-primary">check_circle</span>
@@ -311,7 +315,7 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="material-symbols-outlined text-[16px] text-primary">check_circle</span>
-                                <span>Esquema JSON con campos validados para temperatura y humedad</span>
+                                <span>Campos del payload: temperatura, humedad_relativa, nivel_gas, estado, silenciado, uptime_s</span>
                             </div>
                         </div>
                     </div>
@@ -347,16 +351,16 @@
                         <div>
                             <span class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-sm mb-3">01</span>
                             <h4 class="font-headline-sm text-headline-sm text-on-surface font-medium mb-1">Sensores Físicos</h4>
-                            <p class="font-body-sm text-body-sm text-outline">DHT11 (Temp/Hum) y MQ-2 (Humo) colocados en la altura media y superior del bastidor.</p>
+                            <p class="font-body-sm text-body-sm text-outline">SHT40 (Temp/Hum, bus I2C) y MQ-2 (Gas/Humo, ADC) instalados en la altura media y superior del bastidor.</p>
                         </div>
-                        <span class="font-code-sm text-code-sm text-primary mt-4">GPIO 4 / ADC6</span>
+                        <span class="font-code-sm text-code-sm text-primary mt-4">GPIO 21/22 / ADC1_CH6</span>
                     </div>
 
                     <div class="bg-surface-container p-5 rounded-lg border border-outline-variant/20 flex flex-col justify-between">
                         <div>
                             <span class="w-8 h-8 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center font-bold text-sm mb-3">02</span>
                             <h4 class="font-headline-sm text-headline-sm text-on-surface font-medium mb-1">Nodo Microcontrolador</h4>
-                            <p class="font-body-sm text-body-sm text-outline">ESP32 procesa lecturas, calcula el índice de calor y construye el paquete JSON.</p>
+                            <p class="font-body-sm text-body-sm text-outline">ESP32 lee los sensores, evalúa los umbrales y construye el paquete JSON de telemetría.</p>
                         </div>
                         <span class="font-code-sm text-code-sm text-secondary mt-4">Cadencia: 3s</span>
                     </div>
@@ -425,7 +429,7 @@
                         <span class="material-symbols-outlined text-[20px] transition-transform text-outline" :class="openFaq === 3 ? 'rotate-180 text-primary' : ''">expand_more</span>
                     </button>
                     <div x-show="openFaq === 3" x-collapse class="px-6 pb-6 text-on-surface-variant font-body-md text-body-md leading-relaxed border-t border-outline-variant/20 pt-4">
-                        Para evitar que el panel muestre ceros o datos artificiales irreales, el sistema incorpora un servicio de línea base atmosférica que solicita geolocalización o consulta las coordenadas de <strong>Montería, Córdoba</strong> mediante modelos numéricos de Open-Meteo. En cuanto el microcontrolador ESP32 comienza a transmitir paquetes MQTT con datos del DHT11, la telemetría del sensor toma el control exclusivo del panel de control de forma inmediata.
+                        De ninguna fuente artificial: el panel solo muestra datos reales del ESP32. Mientras el microcontrolador no publique en <code class="text-primary font-code-sm">intalnet/sala01/telemetria</code>, las tarjetas permanecen vacías y la gráfica muestra el estado <strong>Esperando telemetría del ESP32</strong>. En cuanto llega el primer paquete, la lectura del SHT40 y del MQ-2 toma el control exclusivo del panel de control.
                     </div>
                 </div>
 

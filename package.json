@@ -19,5 +19,12 @@
     },
     "optionalDependencies": {
         "@laravel/multiplex": "^0.4.1"
+    },
+    "dependencies": {
+        "apexcharts": "^8.8.1",
+        "mqtt": "^5.16.1"
+    },
+    "overrides": {
+        "postcss-selector-parser": "^6.1.6"
     }
 }

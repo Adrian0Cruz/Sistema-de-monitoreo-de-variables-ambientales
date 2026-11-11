@@ -7,20 +7,27 @@ use Illuminate\Support\Facades\Storage;
 if (! function_exists('getAetherSensSettings')) {
     function getAetherSensSettings(): array
     {
+        // Los valores por defecto replican las constantes del firmware del ESP32
+        // (TEMP_UMBRAL_ADVERTENCIA, TEMP_UMBRAL_CRITICO, MQ2_UMBRAL_HUMO y los
+        // tópicos MQTT declarados en el sketch de Intalnet).
         $default = [
             'tempMin' => 18.0,
-            'tempMax' => 24.0,
-            'tempCritica' => 28.0,
+            'tempMax' => 35.0,
+            'tempCritica' => 38.0,
             'humMin' => 40.0,
             'humMax' => 60.0,
             'humCritica' => 75.0,
-            'humoPpm' => 50,
+            'gasAdcUmbral' => 1800,
             'brokerHost' => 'broker.hivemq.com',
-            'brokerPort' => 8884,
-            'topic' => 'pas_iot/datacenter/telemetria',
+            'brokerPort' => 1883,
+            'brokerWsPort' => 8000,
+            'brokerWsPortTls' => 8884,
+            'topic' => 'intalnet/sala01/telemetria',
+            'topicEstado' => 'intalnet/sala01/estado',
+            'topicAlerta' => 'intalnet/sala01/alerta',
             'intervalo' => 3,
             'watchdog' => 10,
-            'zona' => 'Zona A - Sala de Racks (Montería)',
+            'zona' => 'Sala 01 - Intalnet (Montería)',
             'audioAlert' => true,
             'auditLog' => true,
         ];
@@ -81,10 +88,14 @@ Route::middleware([
             'humMin' => 'required|numeric',
             'humMax' => 'required|numeric',
             'humCritica' => 'required|numeric',
-            'humoPpm' => 'required|numeric',
+            'gasAdcUmbral' => 'required|numeric',
             'brokerHost' => 'required|string',
             'brokerPort' => 'required|numeric',
+            'brokerWsPort' => 'required|numeric',
+            'brokerWsPortTls' => 'required|numeric',
             'topic' => 'required|string',
+            'topicEstado' => 'required|string',
+            'topicAlerta' => 'required|string',
             'intervalo' => 'required|numeric',
             'watchdog' => 'required|numeric',
             'zona' => 'required|string',
@@ -98,8 +109,10 @@ Route::middleware([
         $validated['humMin'] = (float) $validated['humMin'];
         $validated['humMax'] = (float) $validated['humMax'];
         $validated['humCritica'] = (float) $validated['humCritica'];
-        $validated['humoPpm'] = (int) $validated['humoPpm'];
+        $validated['gasAdcUmbral'] = (int) $validated['gasAdcUmbral'];
         $validated['brokerPort'] = (int) $validated['brokerPort'];
+        $validated['brokerWsPort'] = (int) $validated['brokerWsPort'];
+        $validated['brokerWsPortTls'] = (int) $validated['brokerWsPortTls'];
         $validated['intervalo'] = (int) $validated['intervalo'];
         $validated['watchdog'] = (int) $validated['watchdog'];
         $validated['audioAlert'] = (bool) ($request->input('audioAlert', true));

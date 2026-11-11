@@ -4,22 +4,20 @@
         guardando: false,
         form: @js($settings),
         init() {
-            const saved = localStorage.getItem('aethersens_settings');
+            const saved = localStorage.getItem('intalnet_settings');
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
                     this.form = Object.assign({}, this.form, parsed);
                 } catch (e) {
-                    console.warn('[AetherSens] Error al leer ajustes de localStorage:', e);
+                    console.warn('[Intalnet] Error al leer ajustes de localStorage:', e);
                 }
             }
         },
         async guardar() {
             this.guardando = true;
-            // 1. Guardar de forma inmediata en el almacenamiento del navegador
-            localStorage.setItem('aethersens_settings', JSON.stringify(this.form));
+            localStorage.setItem('intalnet_settings', JSON.stringify(this.form));
 
-            // 2. Persistir en el backend de Laravel
             try {
                 const response = await fetch('{{ route('settings.save') }}', {
                     method: 'POST',
@@ -32,7 +30,7 @@
                 });
                 if (!response.ok) throw new Error('Error en backend');
             } catch (err) {
-                console.warn('[AetherSens] Ajustes guardados en navegador; error al sincronizar backend:', err);
+                console.warn('[Intalnet] Ajustes guardados en navegador; error al sincronizar backend:', err);
             } finally {
                 this.guardando = false;
                 this.guardado = true;
@@ -96,14 +94,14 @@
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Temperatura Máxima Advertencia (°C)</label>
                     <input type="number" step="0.5" x-model.number="form.tempMax" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-secondary font-code-sm text-code-sm focus:ring-1 focus:ring-secondary focus:border-secondary">
-                    <span class="text-[11px] text-outline">Techo de operación segura recomendado por ASHRAE (24.0°C)</span>
+                    <span class="text-[11px] text-outline">TEMP_UMBRAL_ADVERTENCIA del firmware (28.0 °C)</span>
                 </div>
 
                 {{-- Temperatura Crítica --}}
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Temperatura Crítica (°C)</label>
                     <input type="number" step="0.5" x-model.number="form.tempCritica" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-error font-code-sm text-code-sm focus:ring-1 focus:ring-error focus:border-error">
-                    <span class="text-[11px] text-outline">Alarma inmediata antes de thermal throttling en servidores (28.0°C)</span>
+                    <span class="text-[11px] text-outline">TEMP_UMBRAL_CRITICO del firmware (35.0 °C) — LED rojo + buzzer</span>
                 </div>
 
                 {{-- Humedad Mínima --}}
@@ -129,9 +127,9 @@
 
                 {{-- Humo Umbral --}}
                 <div class="space-y-1.5">
-                    <label class="block font-label-sm text-label-sm text-on-surface">Sensibilidad Sensor de Humo (PPM)</label>
-                    <input type="number" step="5" x-model.number="form.humoPpm" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-tertiary font-code-sm text-code-sm focus:ring-1 focus:ring-tertiary focus:border-tertiary">
-                    <span class="text-[11px] text-outline">Umbral para declarar presencia de partículas de combustión</span>
+                    <label class="block font-label-sm text-label-sm text-on-surface">Sensibilidad Sensor MQ-2 (ADC)</label>
+                    <input type="number" step="50" x-model.number="form.gasAdcUmbral" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-tertiary font-code-sm text-code-sm focus:ring-1 focus:ring-tertiary focus:border-tertiary">
+                    <span class="text-[11px] text-outline">MQ2_UMBRAL_HUMO del firmware (1500 ADC sobre 0–4095) — dispara estado HUMO_DETECTADO</span>
                 </div>
 
             </div>
@@ -147,7 +145,7 @@
                 </div>
                 <div>
                     <h2 class="font-headline-sm text-headline-sm text-on-surface">Parámetros MQTT & Dispositivos ESP32</h2>
-                    <p class="font-body-sm text-body-sm text-outline">Configuración de enlace con el broker público HiveMQ y canal de telemetría</p>
+                    <p class="font-body-sm text-body-sm text-outline">Enlace con el broker MQTT (puerto nativo del ESP32 y WebSocket para el navegador) y tópicos del proyecto Intalnet</p>
                 </div>
             </div>
 
@@ -160,25 +158,53 @@
                     <span class="text-[11px] text-outline">Broker por defecto: broker.hivemq.com</span>
                 </div>
 
-                {{-- WebSocket Port --}}
+                {{-- MQTT Port --}}
                 <div class="space-y-1.5">
-                    <label class="block font-label-sm text-label-sm text-on-surface">Puerto WebSockets Seguro (WSS)</label>
+                    <label class="block font-label-sm text-label-sm text-on-surface">Puerto MQTT Nativo (ESP32)</label>
                     <input type="number" x-model.number="form.brokerPort" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
-                    <span class="text-[11px] text-outline">Puerto SSL para navegador (8884)</span>
+                    <span class="text-[11px] text-outline">Puerto usado por el sketch del ESP32 (1883)</span>
                 </div>
 
-                {{-- Topic --}}
+                {{-- WebSocket Port --}}
+                <div class="space-y-1.5">
+                    <label class="block font-label-sm text-label-sm text-on-surface">Puerto WebSocket (navegador)</label>
+                    <input type="number" x-model.number="form.brokerWsPort" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
+                    <span class="text-[11px] text-outline">WebSocket sin cifrar para entornos HTTP locales (8000)</span>
+                </div>
+
+                {{-- WebSocket TLS Port --}}
+                <div class="space-y-1.5">
+                    <label class="block font-label-sm text-label-sm text-on-surface">Puerto WebSocket Seguro (WSS)</label>
+                    <input type="number" x-model.number="form.brokerWsPortTls" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
+                    <span class="text-[11px] text-outline">Puerto SSL para el navegador en despliegues HTTPS (8884)</span>
+                </div>
+
+                {{-- Topic Telemetría --}}
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Tópico de Telemetría</label>
                     <input type="text" x-model="form.topic" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-primary font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
-                    <span class="text-[11px] text-outline">Debe coincidir exactamente con el sketch del ESP32</span>
+                    <span class="text-[11px] text-outline">Debe coincidir exactamente con mqtt_topic_telemetria del sketch</span>
+                </div>
+
+                {{-- Topic Estado --}}
+                <div class="space-y-1.5">
+                    <label class="block font-label-sm text-label-sm text-on-surface">Tópico de Estado del Nodo</label>
+                    <input type="text" x-model="form.topicEstado" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-primary font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
+                    <span class="text-[11px] text-outline">mqtt_topic_estado del sketch (mensaje retained ONLINE)</span>
+                </div>
+
+                {{-- Topic Alerta --}}
+                <div class="space-y-1.5">
+                    <label class="block font-label-sm text-label-sm text-on-surface">Tópico de Alertas</label>
+                    <input type="text" x-model="form.topicAlerta" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-primary font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
+                    <span class="text-[11px] text-outline">mqtt_topic_alerta del sketch (cambios de estado y silenciamiento)</span>
                 </div>
 
                 {{-- Intervalo --}}
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Intervalo de Transmisión (Segundos)</label>
                     <input type="number" x-model.number="form.intervalo" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
-                    <span class="text-[11px] text-outline">Cadencia de envío del DHT11 (3 segundos)</span>
+                    <span class="text-[11px] text-outline">Cadencia de envío del ESP32 (3 segundos)</span>
                 </div>
 
                 {{-- Timeout / Watchdog --}}
@@ -192,7 +218,7 @@
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Identificador de Zona Activa</label>
                     <input type="text" x-model="form.zona" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
-                    <span class="text-[11px] text-outline">Etiqueta asignada en el payload JSON</span>
+                    <span class="text-[11px] text-outline">Etiqueta mostrada junto al estado del nodo</span>
                 </div>
 
             </div>

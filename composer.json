@@ -37,7 +37,7 @@
     },
     "scripts": {
         "setup": [
-            "composer install",
+            "PHP_INI_SCAN_DIR=\"/etc/php/conf.d:$PWD/storage/php-ini\" composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
             "@php artisan migrate --force",
@@ -47,6 +47,10 @@
         "dev": [
             "Composer\\Config::disableProcessTimeout",
             "@php artisan dev"
+        ],
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "PHP_INI_SCAN_DIR=\"/etc/php/conf.d:$PWD/storage/php-ini\" php artisan serve --host=0.0.0.0 --port=8000"
         ],
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",

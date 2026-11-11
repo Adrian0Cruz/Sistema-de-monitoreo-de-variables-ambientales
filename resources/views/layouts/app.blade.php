@@ -23,10 +23,6 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
-
-    {{-- Telemetry Libraries: ApexCharts & MQTT.js --}}
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
 <body class="bg-surface font-body-md text-on-surface antialiased selection:bg-primary-container/30 selection:text-on-surface min-h-screen">
 
@@ -119,11 +115,11 @@
             <div class="space-y-1 font-code-sm text-code-sm text-on-surface-variant">
                 <div class="flex justify-between">
                     <span class="text-outline">Firmware:</span>
-                    <span>v2.4.1-prod</span>
+                    <span>ESP32 / SHT40 + MQ-2</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-outline">Broker:</span>
-                    <span class="text-tertiary">Nodo MQTT [Activo]</span>
+                    <span class="text-tertiary">MQTT por WebSocket</span>
                 </div>
             </div>
         </div>
@@ -141,13 +137,13 @@
                 <div class="flex items-center gap-space-sm">
                     <span class="font-headline-sm text-headline-sm text-on-surface">AetherSens</span>
                     <span class="text-outline">/</span>
-                    <span class="font-body-md text-body-md text-on-surface-variant">Monitoreo de Sala de Servidores</span>
+                    <span class="font-body-md text-body-md text-on-surface-variant">Monitoreo de Sala T&eacute;rmica 01</span>
                 </div>
 
                 {{-- Zone Selector Chip --}}
                 <div class="relative flex items-center bg-surface-container-high border border-outline-variant rounded-lg px-space-md py-1.5 cursor-pointer hover:bg-surface-container-highest transition-colors">
                     <span class="material-symbols-outlined text-[16px] text-outline mr-1.5">location_on</span>
-                    <span class="font-label-md text-label-md text-on-surface pr-space-md">Zona A</span>
+                    <span class="font-label-md text-label-md text-on-surface pr-space-md">Sala 01</span>
                     <span class="material-symbols-outlined text-[16px] text-outline">expand_more</span>
                 </div>
             </div>
@@ -157,8 +153,8 @@
 
                 {{-- ESP32 Connection Pill --}}
                 <div class="flex items-center gap-2 bg-surface-container px-space-md py-1.5 rounded-full border border-tertiary/30">
-                    <div class="w-2 h-2 rounded-full bg-tertiary"></div>
-                    <span class="font-code-sm text-code-sm text-tertiary">ESP32: Conectado (MQTT / Livewire)</span>
+                    <div id="esp32-header-dot" class="w-2 h-2 rounded-full bg-tertiary"></div>
+                    <span id="esp32-header-status" class="font-code-sm text-code-sm text-tertiary">ESP32: Sala 01</span>
                 </div>
 
                 <div class="h-4 w-px bg-outline-variant"></div>

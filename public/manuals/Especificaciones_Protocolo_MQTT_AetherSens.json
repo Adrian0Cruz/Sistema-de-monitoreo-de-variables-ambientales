@@ -1,6 +1,6 @@
 {
-  "system": "AetherSens Enterprise Telemetry",
-  "version": "2.4",
+  "system": "AetherSens - Intalnet Sala Técnica 01",
+  "version": "3.0",
   "protocol": "MQTT v3.1.1 / WebSockets",
   "broker": {
     "host": "broker.hivemq.com",
@@ -13,23 +13,48 @@
     "path": "/mqtt"
   },
   "topics": {
-    "telemetry": "pas_iot/datacenter/telemetria",
-    "alerts": "pas_iot/datacenter/alertas",
-    "status": "pas_iot/datacenter/status"
+    "telemetry": "intalnet/sala01/telemetria",
+    "state": "intalnet/sala01/estado",
+    "alerts": "intalnet/sala01/alerta"
   },
   "sample_payload": {
-    "temperatura": 21.8,
-    "humedad": 46.5,
-    "sensacion_termica": 22.1,
-    "humo_ppm": 0,
-    "zona": "Zona A - Sala de Racks (Montería)",
-    "timestamp": "2026-10-31T18:45:00-05:00",
-    "device_id": "ESP32_SRV_RACK_01",
-    "wifi_rssi_dbm": -58
+    "temperatura": 29.7,
+    "humedad_relativa": 58.1,
+    "nivel_gas": 1420,
+    "estado": "ADVERTENCIA",
+    "silenciado": false,
+    "uptime_s": 98765
+  },
+  "sample_state_payload": {
+    "dispositivo": "ESP32_SALA01",
+    "estado": "ONLINE"
+  },
+  "sample_alert_payloads": [
+    {
+      "evento": "CAMBIO_ESTADO",
+      "nuevo_estado": "CRITICO",
+      "temperatura": 31.9,
+      "gas": 1495
+    },
+    {
+      "evento": "SILENCIADO_MANUAL",
+      "mensaje": "Buzzer apagado por pulsador local"
+    }
+  ],
+  "states": [
+    "NORMAL",
+    "ADVERTENCIA",
+    "CRITICO",
+    "HUMO_DETECTADO"
+  ],
+  "thresholds": {
+    "temperatura_advertencia_c": 28.0,
+    "temperatura_critica_c": 35.0,
+    "gas_humo_adc": 1500,
+    "adc_full_scale": 4095
   },
   "timing": {
     "sampling_rate_seconds": 3,
     "watchdog_timeout_seconds": 10
   }
 }
-

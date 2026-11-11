@@ -1,0 +1,653 @@
+import ApexCharts from 'apexcharts';
+import mqtt from 'mqtt';
+
+window.ApexCharts = ApexCharts;
+window.mqtt = mqtt;
+
+const STORAGE_KEY = 'intalnet_settings';
+const MAX_CHART_POINTS = 60;
+const MAX_ALERT_ROWS = 25;
+const ADC_FULL_SCALE = 4095;
+
+const DEFAULT_SETTINGS = {
+    brokerHost: 'broker.hivemq.com',
+    brokerPort: 1883,
+    brokerWsPort: 8000,
+    brokerWsPortTls: 8884,
+    topic: 'intalnet/sala01/telemetria',
+    topicEstado: 'intalnet/sala01/estado',
+    topicAlerta: 'intalnet/sala01/alerta',
+    tempMin: 18,
+    tempMax: 35,
+    tempCritica: 38,
+    humMin: 40,
+    humMax: 60,
+    humCritica: 75,
+    gasAdcUmbral: 1800,
+    intervalo: 3,
+    watchdog: 10,
+    zona: 'Sala 01 - Intalnet (Montería)',
+    audioAlert: true,
+};
+
+const ESP_STATE_MAP = {
+    NORMAL: { status: 'normal', label: 'Normal' },
+    ADVERTENCIA: { status: 'warning', label: 'Advertencia' },
+    CRITICO: { status: 'critical', label: 'Crítico' },
+    HUMO_DETECTADO: { status: 'critical', label: 'Humo Detectado' },
+};
+
+const STATUS_STYLES = {
+    normal: { badge: 'bg-tertiary/10 text-tertiary', dot: 'bg-tertiary', label: 'Normal' },
+    warning: { badge: 'bg-secondary/10 text-secondary', dot: 'bg-secondary', label: 'Advertencia' },
+    critical: { badge: 'bg-error/10 text-error', dot: 'bg-error', label: 'Crítico' },
+};
+
+const numberOr = (value, fallback) => {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const formatUtcMinus5 = (date = new Date()) => {
+    try {
+        return new Intl.DateTimeFormat('es-CO', {
+            timeZone: 'America/Bogota',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+        }).format(date);
+    } catch (error) {
+        return date.toISOString().slice(11, 19);
+    }
+};
+
+const formatUptime = (seconds) => {
+    const total = Math.max(0, Math.floor(numberOr(seconds, 0)));
+    const days = Math.floor(total / 86400);
+    const hours = Math.floor((total % 86400) / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const rest = total % 60;
+    const clock = [hours, minutes, rest].map((unit) => String(unit).padStart(2, '0')).join(':');
+
+    return days > 0 ? `${days}d ${clock}` : clock;
+};
+
+const readSettings = () => {
+    let settings = { ...DEFAULT_SETTINGS };
+
+    const configNode = document.getElementById('dashboard-config');
+    if (configNode) {
+        try {
+            settings = { ...settings, ...JSON.parse(configNode.textContent) };
+        } catch (error) {
+            console.warn('[Intalnet] No se pudo leer la configuración del servidor:', error);
+        }
+    }
+
+    try {
+        const stored = window.localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            settings = { ...settings, ...JSON.parse(stored) };
+        }
+    } catch (error) {
+        console.warn('[Intalnet] No se pudo leer la configuración local:', error);
+    }
+
+    return settings;
+};
+
+const buildBrokerUrl = (settings, secure) => {
+    const host = settings.brokerHost || DEFAULT_SETTINGS.brokerHost;
+    const port = secure
+        ? numberOr(settings.brokerWsPortTls, DEFAULT_SETTINGS.brokerWsPortTls)
+        : numberOr(settings.brokerWsPort, DEFAULT_SETTINGS.brokerWsPort);
+
+    return `${secure ? 'wss' : 'ws'}://${host}:${port}/mqtt`;
+};
+
+export function initDashboard() {
+    const root = document.querySelector('[data-dashboard-root]');
+
+    if (!root) {
+        return;
+    }
+
+    const settings = readSettings();
+    const chartElement = document.getElementById('telemetry-chart');
+
+    let chart = null;
+    let client = null;
+    let watchdogTimer = null;
+    let lastEspState = null;
+    let lastAlertKey = null;
+    let lastAlertAt = 0;
+    let useSecureSocket = window.location.protocol === 'https:';
+    let reconnectAttempt = 0;
+
+    const temperatureSeries = [];
+    const humiditySeries = [];
+
+    const element = (id) => document.getElementById(id);
+
+    const setText = (id, value) => {
+        const node = element(id);
+        if (node) {
+            node.textContent = value;
+        }
+    };
+
+    const setBadge = (id, status, label) => {
+        const badge = element(id);
+        if (!badge) {
+            return;
+        }
+
+        const style = STATUS_STYLES[status] || STATUS_STYLES.normal;
+        const dot = badge.querySelector('.rounded-full');
+        const text = badge.querySelector('.status-text');
+
+        badge.className = `px-2.5 py-1 rounded-md font-label-sm text-label-sm flex items-center gap-1.5 transition-colors ${style.badge}`;
+
+        if (dot) {
+            dot.className = `w-1.5 h-1.5 rounded-full ${style.dot}`;
+        }
+
+        if (text) {
+            text.textContent = label || style.label;
+        }
+    };
+
+    const setConnectionState = (state, message) => {
+        const dot = element('esp32-status-dot');
+        const text = element('esp32-status-text');
+
+        if (dot) {
+            const dotClasses = {
+                connecting: 'w-2 h-2 rounded-full bg-secondary animate-pulse',
+                broker: 'w-2 h-2 rounded-full bg-secondary',
+                live: 'w-2 h-2 rounded-full bg-tertiary animate-pulse',
+                stale: 'w-2 h-2 rounded-full bg-secondary',
+                error: 'w-2 h-2 rounded-full bg-error',
+            };
+
+            dot.className = dotClasses[state] || dotClasses.broker;
+        }
+
+        if (text) {
+            text.textContent = message;
+        }
+
+        const headerDot = element('esp32-header-dot');
+        const headerText = element('esp32-header-status');
+
+        if (headerDot) {
+            const dotClasses = {
+                connecting: 'w-2 h-2 rounded-full bg-secondary animate-pulse',
+                broker: 'w-2 h-2 rounded-full bg-secondary',
+                live: 'w-2 h-2 rounded-full bg-tertiary animate-pulse',
+                stale: 'w-2 h-2 rounded-full bg-secondary',
+                error: 'w-2 h-2 rounded-full bg-error',
+            };
+
+            headerDot.className = dotClasses[state] || dotClasses.broker;
+        }
+
+        if (headerText) {
+            headerText.textContent = `ESP32: ${message.replace(/^ESP32\s+/i, '')}`;
+            headerText.className = `font-code-sm text-code-sm ${
+                state === 'live'
+                    ? 'text-tertiary'
+                    : (state === 'error' ? 'text-error' : 'text-secondary')
+            }`;
+        }
+
+        window.dispatchEvent(new CustomEvent('intalnet:esp-status', { detail: { state, message } }));
+    };
+
+    const evaluateTemperature = (value) => {
+        const min = numberOr(settings.tempMin, DEFAULT_SETTINGS.tempMin);
+        const max = numberOr(settings.tempMax, DEFAULT_SETTINGS.tempMax);
+        const critical = numberOr(settings.tempCritica, DEFAULT_SETTINGS.tempCritica);
+
+        if (value >= critical) {
+            return 'critical';
+        }
+
+        if (value > max || value < min) {
+            return 'warning';
+        }
+
+        return 'normal';
+    };
+
+    const evaluateHumidity = (value) => {
+        const min = numberOr(settings.humMin, DEFAULT_SETTINGS.humMin);
+        const max = numberOr(settings.humMax, DEFAULT_SETTINGS.humMax);
+        const critical = numberOr(settings.humCritica, DEFAULT_SETTINGS.humCritica);
+
+        if (value >= critical || value < min - 10) {
+            return 'critical';
+        }
+
+        if (value > max || value < min) {
+            return 'warning';
+        }
+
+        return 'normal';
+    };
+
+    const evaluateGas = (value) => {
+        const threshold = numberOr(settings.gasAdcUmbral, DEFAULT_SETTINGS.gasAdcUmbral);
+        return value >= threshold ? 'critical' : 'normal';
+    };
+
+    const applyThresholdsToLabels = () => {
+        setText('metric-temp-range', `Rango operativo: ${settings.tempMin}°C – ${settings.tempMax}°C`);
+        setText('metric-hum-range', `Rango operativo: ${settings.humMin}% – ${settings.humMax}%`);
+        setText('metric-gas-threshold', String(settings.gasAdcUmbral));
+
+        const marker = element('metric-gas-marker');
+        if (marker) {
+            const position = Math.min(100, (numberOr(settings.gasAdcUmbral, DEFAULT_SETTINGS.gasAdcUmbral) / ADC_FULL_SCALE) * 100);
+            marker.style.left = `${position}%`;
+        }
+
+        setText('esp32-zone-text', settings.zona || DEFAULT_SETTINGS.zona);
+    };
+
+    const renderChart = () => {
+        if (!chartElement) {
+            return;
+        }
+
+        const options = {
+            series: [
+                { name: 'Temperatura', data: [...temperatureSeries] },
+                { name: 'Humedad', data: [...humiditySeries] },
+            ],
+            chart: {
+                type: 'area',
+                height: 290,
+                animations: { enabled: true, easing: 'linear', dynamicAnimation: { speed: 500 } },
+                toolbar: { show: false },
+                background: 'transparent',
+                fontFamily: "'Geist', sans-serif",
+            },
+            colors: ['#a4c9ff', '#77d6d3'],
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: [2.5, 2] },
+            fill: {
+                type: 'gradient',
+                gradient: { shadeIntensity: 1, opacityFrom: 0.28, opacityTo: 0.02, stops: [0, 95, 100] },
+            },
+            grid: {
+                borderColor: '#414751',
+                strokeDashArray: 3,
+                opacity: 0.4,
+                xaxis: { lines: { show: false } },
+                yaxis: { lines: { show: true } },
+                padding: { top: 10, right: 20, bottom: 0, left: 20 },
+            },
+            legend: { show: false },
+            xaxis: {
+                type: 'datetime',
+                tickAmount: 5,
+                labels: {
+                    style: { colors: '#8b919d', fontFamily: "'JetBrains Mono', monospace", fontSize: '11px' },
+                    hideOverlappingLabels: true,
+                    formatter: (value, timestamp) => formatUtcMinus5(new Date(timestamp ?? value)),
+                },
+                axisBorder: { show: true, color: '#414751' },
+                axisTicks: { show: true, color: '#414751' },
+                tooltip: { enabled: false },
+            },
+            yaxis: [
+                {
+                    seriesName: 'Temperatura',
+                    min: (min) => (Number.isFinite(min) ? Math.min(15, Math.floor((min - 2) / 5) * 5) : 15),
+                    max: (max) => (Number.isFinite(max) ? Math.max(35, Math.ceil((max + 2) / 5) * 5) : 35),
+                    tickAmount: 4,
+                    axisTicks: { show: true, color: '#a4c9ff' },
+                    axisBorder: { show: true, color: '#a4c9ff' },
+                    labels: {
+                        style: { colors: '#a4c9ff', fontFamily: "'JetBrains Mono', monospace", fontSize: '11px' },
+                        formatter: (value) => (value === null || value === undefined ? '' : `${Number(value).toFixed(1)} °C`),
+                    },
+                    title: {
+                        text: 'Temperatura (°C)',
+                        style: { color: '#a4c9ff', fontSize: '12px', fontFamily: "'Geist', sans-serif", fontWeight: 600 },
+                    },
+                },
+                {
+                    opposite: true,
+                    seriesName: 'Humedad',
+                    min: 0,
+                    max: 100,
+                    tickAmount: 4,
+                    axisTicks: { show: true, color: '#77d6d3' },
+                    axisBorder: { show: true, color: '#77d6d3' },
+                    labels: {
+                        style: { colors: '#77d6d3', fontFamily: "'JetBrains Mono', monospace", fontSize: '11px' },
+                        formatter: (value) => (value === null || value === undefined ? '' : `${Math.round(Number(value))} %`),
+                    },
+                    title: {
+                        text: 'Humedad (% RH)',
+                        style: { color: '#77d6d3', fontSize: '12px', fontFamily: "'Geist', sans-serif", fontWeight: 600 },
+                    },
+                },
+            ],
+            tooltip: {
+                theme: 'dark',
+                shared: true,
+                intersect: false,
+                style: { fontSize: '12px', fontFamily: "'Geist', sans-serif" },
+                x: {
+                    formatter: (value) => `Hora (UTC -5): ${formatUtcMinus5(new Date(value))}`,
+                },
+                y: {
+                    formatter: (value, context) => {
+                        if (value === null || value === undefined) {
+                            return '--';
+                        }
+
+                        return context.seriesIndex === 0
+                            ? `${Number(value).toFixed(1)} °C`
+                            : `${Number(value).toFixed(1)} % RH`;
+                    },
+                },
+            },
+        };
+
+        chart = new ApexCharts(chartElement, options);
+        chart.render();
+    };
+
+    const pushPoint = (temperature, humidity, timestamp) => {
+        temperatureSeries.push([timestamp, temperature]);
+        humiditySeries.push([timestamp, humidity]);
+
+        while (temperatureSeries.length > MAX_CHART_POINTS) {
+            temperatureSeries.shift();
+            humiditySeries.shift();
+        }
+
+        if (chart) {
+            chart.updateSeries([
+                { name: 'Temperatura', data: [...temperatureSeries] },
+                { name: 'Humedad', data: [...humiditySeries] },
+            ], true);
+        }
+    };
+
+    const addAlertRow = ({ event, detail, status, key }) => {
+        const tbody = element('telemetry-table-body');
+
+        if (!tbody) {
+            return;
+        }
+
+        const now = Date.now();
+        if (key && key === lastAlertKey && now - lastAlertAt < 5000) {
+            return;
+        }
+
+        lastAlertKey = key || null;
+        lastAlertAt = now;
+
+        const emptyRow = element('telemetry-alert-empty');
+        if (emptyRow) {
+            emptyRow.remove();
+        }
+
+        const style = STATUS_STYLES[status] || STATUS_STYLES.normal;
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-surface-container-high/60 transition-colors bg-surface-container/20';
+        row.innerHTML = `
+            <td class="py-5 px-8 font-code-sm text-code-sm text-on-surface-variant">${formatUtcMinus5()}</td>
+            <td class="py-5 px-8 font-medium text-on-surface">${event}</td>
+            <td class="py-5 px-8 font-code-sm text-code-sm text-on-surface">${detail}</td>
+            <td class="py-5 px-8 text-right">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label-sm text-label-sm ${style.badge}">
+                    <span class="w-1.5 h-1.5 rounded-full ${style.dot}"></span>
+                    ${style.label}
+                </span>
+            </td>
+        `;
+
+        tbody.insertBefore(row, tbody.firstChild);
+
+        while (tbody.children.length > MAX_ALERT_ROWS) {
+            tbody.removeChild(tbody.lastChild);
+        }
+
+        const counter = element('telemetry-alert-count');
+        if (counter) {
+            counter.textContent = `${tbody.children.length} registros`;
+        }
+    };
+
+    const renderBuzzerState = (silenced, state) => {
+        const critical = state === 'ESTADO_CRITICO' || state === 'ESTADO_HUMO' || state === 'CRITICO' || state === 'HUMO_DETECTADO';
+        const value = silenced ? 'SILENCIADO' : (critical ? 'ACTIVO' : 'EN REPOSO');
+        const status = silenced ? 'warning' : (critical ? 'critical' : 'normal');
+
+        setText('metric-buzzer-val', value);
+        setBadge('metric-buzzer-badge', status, silenced ? 'Silenciado' : (critical ? 'Alarma' : 'Inactivo'));
+        setText('metric-buzzer-detail', silenced
+            ? 'El operador accionó el pulsador industrial NO'
+            : (critical ? 'Alarma sonora activa por condición crítica' : 'Sin condiciones que requieran alarma'));
+    };
+
+    const handleTelemetry = (payload) => {
+        const timestamp = Date.now();
+        const time = formatUtcMinus5(new Date(timestamp));
+
+        const temperature = numberOr(payload.temperatura, null);
+        const humidity = numberOr(payload.humedad_relativa ?? payload.humedad, null);
+        const gas = numberOr(payload.nivel_gas, null);
+        const espState = typeof payload.estado === 'string' ? payload.estado.toUpperCase() : null;
+        const silenced = payload.silenciado === true || payload.silenciado === 'true';
+
+        if (temperature !== null) {
+            setText('metric-temp-val', temperature.toFixed(1));
+            setBadge('metric-temp-badge', evaluateTemperature(temperature));
+        }
+
+        if (humidity !== null) {
+            setText('metric-hum-val', humidity.toFixed(1));
+            setBadge('metric-hum-badge', evaluateHumidity(humidity));
+        }
+
+        if (gas !== null) {
+            setText('metric-gas-val', String(Math.round(gas)));
+            setBadge('metric-gas-badge', evaluateGas(gas));
+
+            const bar = element('metric-gas-bar');
+            if (bar) {
+                const percent = Math.min(100, (gas / ADC_FULL_SCALE) * 100);
+                bar.style.width = `${percent}%`;
+                bar.className = `h-2 rounded-full transition-all duration-300 ${evaluateGas(gas) === 'critical' ? 'bg-error' : 'bg-tertiary'}`;
+            }
+        }
+
+        if (espState) {
+            const mapped = ESP_STATE_MAP[espState] || { status: 'normal', label: espState };
+            setText('metric-estado-val', espState);
+            setBadge('metric-estado-badge', mapped.status, mapped.label);
+            renderBuzzerState(silenced, espState);
+
+            if (lastEspState && lastEspState !== espState) {
+                addAlertRow({
+                    event: 'Cambio de estado de sala',
+                    detail: `${lastEspState} → ${espState}`,
+                    status: mapped.status,
+                    key: `estado:${espState}`,
+                });
+            }
+
+            lastEspState = espState;
+        }
+
+        setText('metric-uptime-val', formatUptime(payload.uptime_s));
+        setText('metric-lastpacket-val', time);
+
+        if (temperature !== null && humidity !== null) {
+            pushPoint(temperature, humidity, timestamp);
+        }
+
+        const emptyState = element('telemetry-empty-state');
+        if (emptyState) {
+            emptyState.classList.add('hidden');
+        }
+
+        setConnectionState('live', `ESP32 en línea · ${time}`);
+
+        clearTimeout(watchdogTimer);
+        watchdogTimer = setTimeout(() => {
+            setConnectionState('stale', `ESP32 sin señal (>${settings.watchdog}s)`);
+        }, numberOr(settings.watchdog, DEFAULT_SETTINGS.watchdog) * 1000);
+    };
+
+    const handleDeviceState = (payload) => {
+        const device = payload.dispositivo || 'ESP32_SALA01';
+        setText('metric-node-device', device);
+
+        if (String(payload.estado).toUpperCase() === 'ONLINE') {
+            setConnectionState('broker', `Broker conectado · ${device} registrado`);
+        }
+    };
+
+    const handleAlert = (payload) => {
+        const event = payload.evento || 'EVENTO';
+        const time = formatUtcMinus5();
+
+        if (event === 'CAMBIO_ESTADO') {
+            const state = String(payload.nuevo_estado || '').toUpperCase();
+            const mapped = ESP_STATE_MAP[state] || { status: 'warning', label: state || 'Cambio' };
+            const temperature = numberOr(payload.temperatura, null);
+            const gas = numberOr(payload.gas, null);
+            const detail = [
+                state || '—',
+                temperature !== null ? `${temperature.toFixed(1)} °C` : null,
+                gas !== null ? `${Math.round(gas)} ADC` : null,
+            ].filter(Boolean).join(' · ');
+
+            addAlertRow({
+                event: 'Alerta ESP32 · Cambio de estado',
+                detail,
+                status: mapped.status,
+                key: `cambio:${state}`,
+            });
+
+            return;
+        }
+
+        if (event === 'SILENCIADO_MANUAL') {
+            addAlertRow({
+                event: 'Alerta ESP32 · Buzzer silenciado',
+                detail: payload.mensaje || 'Silenciado mediante pulsador industrial NO',
+                status: 'warning',
+                key: `silencio:${time}`,
+            });
+
+            return;
+        }
+
+        addAlertRow({
+            event: `Alerta ESP32 · ${event}`,
+            detail: payload.mensaje || payload.detalle || '—',
+            status: 'warning',
+            key: `evento:${event}:${time}`,
+        });
+    };
+
+    const connect = () => {
+        const url = buildBrokerUrl(settings, useSecureSocket);
+
+        setConnectionState('connecting', `Conectando a ${url}...`);
+
+        client = mqtt.connect(url, {
+            clientId: `WebDashboard_${Math.random().toString(16).slice(2, 10)}`,
+            clean: true,
+            connectTimeout: 8000,
+            reconnectPeriod: 4000,
+            keepalive: 30,
+        });
+
+        client.on('connect', () => {
+            reconnectAttempt = 0;
+            setConnectionState('broker', 'Broker conectado · esperando telemetría ESP32');
+
+            const topics = [settings.topic, settings.topicEstado, settings.topicAlerta];
+
+            client.subscribe(topics, { qos: 0 }, (error) => {
+                if (error) {
+                    console.error('[Intalnet] Error al suscribirse a los tópicos MQTT:', error);
+                    setConnectionState('error', 'Error al suscribirse a los tópicos');
+                    return;
+                }
+
+                console.info(`[Intalnet] Suscrito a: ${topics.join(', ')}`);
+            });
+        });
+
+        client.on('message', (topic, message) => {
+            let payload;
+
+            try {
+                payload = JSON.parse(message.toString());
+            } catch (error) {
+                console.warn(`[Intalnet] Payload no JSON en ${topic}:`, error);
+                return;
+            }
+
+            if (topic === settings.topic) {
+                handleTelemetry(payload);
+                return;
+            }
+
+            if (topic === settings.topicEstado) {
+                handleDeviceState(payload);
+                return;
+            }
+
+            if (topic === settings.topicAlerta) {
+                handleAlert(payload);
+            }
+        });
+
+        client.on('error', (error) => {
+            console.error('[Intalnet] Error de conexión MQTT:', error);
+            setConnectionState('error', 'Error de conexión MQTT (revise la consola)');
+
+            reconnectAttempt += 1;
+
+            if (!useSecureSocket && reconnectAttempt >= 2) {
+                useSecureSocket = true;
+                client.end(true);
+                setTimeout(connect, 1000);
+            }
+        });
+
+        client.on('offline', () => {
+            setConnectionState('stale', 'Broker desconectado · reintentando');
+        });
+
+        client.on('reconnect', () => {
+            setConnectionState('connecting', 'Reconectando al broker MQTT...');
+        });
+    };
+
+    applyThresholdsToLabels();
+    renderChart();
+    connect();
+
+    window.addEventListener('beforeunload', () => {
+        clearTimeout(watchdogTimer);
+
+        if (client) {
+            client.end(true);
+        }
+    });
+}
