@@ -48,15 +48,15 @@ $dotClasses = match($status) {
     <div>
         <div class="flex items-baseline gap-2">
             <span @if($valueId) id="{{ $valueId }}" @endif class="font-display-lg text-display-lg tracking-tight {{ $valueColor }} {{ $valueClass }} font-semibold">
-                {{ $value }}
+                {!! $value !!}
             </span>
             @if($unit)
-                <span class="font-headline-md text-headline-md text-outline">{{ $unit }}</span>
+                <span class="font-headline-md text-headline-md text-outline">{!! $unit !!}</span>
             @endif
         </div>
 
         @if($range)
-            <p class="font-body-md text-body-md text-outline mt-3">{{ $range }}</p>
+            <p @if($rangeId) id="{{ $rangeId }}" @endif class="font-body-md text-body-md text-outline mt-3">{!! $range !!}</p>
         @endif
 
         {{-- Allow extra content slot (e.g. smoke text value) --}}

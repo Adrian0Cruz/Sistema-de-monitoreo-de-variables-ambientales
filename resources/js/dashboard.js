@@ -6,7 +6,7 @@ window.mqtt = mqtt;
 
 const STORAGE_KEY = 'intalnet_settings';
 const MAX_CHART_POINTS = 60;
-const MAX_ALERT_ROWS = 25;
+const MAX_ALERT_ROWS = 150;
 const ADC_FULL_SCALE = 4095;
 
 const DEFAULT_SETTINGS = {
@@ -638,6 +638,26 @@ export function initDashboard() {
             setConnectionState('connecting', 'Reconectando al broker MQTT...');
         });
     };
+
+    const clearButton = element('telemetry-clear-alerts');
+    if (clearButton) {
+        clearButton.addEventListener('click', () => {
+            const tbody = element('telemetry-table-body');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr id="telemetry-alert-empty">
+                        <td colspan="4" class="py-8 px-8 text-center text-outline font-body-sm text-body-sm">
+                            Sin eventos registrados hoy. El ESP32 publica las alertas en el tópico de alertas.
+                        </td>
+                    </tr>
+                `;
+            }
+            const counter = element('telemetry-alert-count');
+            if (counter) {
+                counter.textContent = '0 registros';
+            }
+        });
+    }
 
     applyThresholdsToLabels();
     renderChart();
