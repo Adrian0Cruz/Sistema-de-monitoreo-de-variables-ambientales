@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\Fortify\CreateNewUser;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -25,6 +27,7 @@ if (! function_exists('getAetherSensSettings')) {
             'topic' => 'intalnet/sala01/telemetria',
             'topicEstado' => 'intalnet/sala01/estado',
             'topicAlerta' => 'intalnet/sala01/alerta',
+            'topicConfig' => 'intalnet/sala01/config',
             'intervalo' => 3,
             'watchdog' => 10,
             'zona' => 'Sala 01 - Intalnet (Montería)',
@@ -55,6 +58,27 @@ Route::get('/docs', function () {
     return view('docs');
 })->name('docs');
 
+// Registro de operadores: restringido exclusivamente a usuarios autenticados (404 para invitados externos)
+Route::get('/register', function () {
+    if (! auth()->check()) {
+        abort(404);
+    }
+
+    $operadores = User::latest()->take(10)->get();
+
+    return view('auth.register-operator', compact('operadores'));
+})->name('register');
+
+Route::post('/register', function (Request $request, CreateNewUser $creator) {
+    if (! auth()->check()) {
+        abort(404);
+    }
+
+    $user = $creator->create($request->all());
+
+    return back()->with('status', "Operador '{$user->name}' ({$user->email}) registrado exitosamente con nivel {$user->access_level_label}.");
+})->name('register.store');
+
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
@@ -67,7 +91,9 @@ Route::middleware([
     })->name('dashboard');
 
     Route::get('/historical-data', function () {
-        return view('historical-data');
+        $settings = getAetherSensSettings();
+
+        return view('historical-data', compact('settings'));
     })->name('historical-data');
 
     Route::get('/alert-logs', function () {
@@ -96,6 +122,7 @@ Route::middleware([
             'topic' => 'required|string',
             'topicEstado' => 'required|string',
             'topicAlerta' => 'required|string',
+            'topicConfig' => 'nullable|string',
             'intervalo' => 'required|numeric',
             'watchdog' => 'required|numeric',
             'zona' => 'required|string',
@@ -115,6 +142,7 @@ Route::middleware([
         $validated['brokerWsPortTls'] = (int) $validated['brokerWsPortTls'];
         $validated['intervalo'] = (int) $validated['intervalo'];
         $validated['watchdog'] = (int) $validated['watchdog'];
+        $validated['topicConfig'] = (string) ($request->input('topicConfig', 'intalnet/sala01/config'));
         $validated['audioAlert'] = (bool) ($request->input('audioAlert', true));
         $validated['auditLog'] = (bool) ($request->input('auditLog', true));
 

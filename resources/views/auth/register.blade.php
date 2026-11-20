@@ -2,7 +2,7 @@
     <div class="w-full flex flex-col items-center justify-center py-space-xl">
 
         {{-- Auth Card --}}
-        <div class="w-full max-w-[460px] bg-surface-container rounded-xl shadow-card-lg p-space-xl flex flex-col">
+        <div class="w-full max-w-[460px] bg-surface-container rounded-xl shadow-card-lg p-5 sm:p-8 flex flex-col">
 
             {{-- Card Header --}}
             <div class="flex flex-col items-center text-center mb-space-lg">

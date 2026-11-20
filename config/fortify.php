@@ -162,7 +162,7 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Features::registration(), // Registro público deshabilitado: solo operadores autenticados pueden crear cuentas
         Features::resetPasswords(),
         // Features::emailVerification(),
         Features::updateProfileInformation(),

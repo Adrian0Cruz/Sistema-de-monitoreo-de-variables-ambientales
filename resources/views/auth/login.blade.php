@@ -7,7 +7,7 @@
             <div class="absolute -bottom-16 -right-16 w-64 h-64 bg-secondary/5 rounded-full blur-3xl pointer-events-none"></div>
 
             {{-- Auth Card --}}
-            <div class="relative w-full bg-surface-container rounded-2xl shadow-card-lg p-10 flex flex-col">
+            <div class="relative w-full bg-surface-container rounded-2xl shadow-card-lg p-5 sm:p-8 md:p-10 flex flex-col">
 
                 {{-- Logo + Brand --}}
                 <div class="flex flex-col items-center text-center mb-8">
@@ -87,7 +87,7 @@
                     </div>
 
                     {{-- Remember + Forgot --}}
-                    <div class="flex items-center justify-between pt-1">
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
                         <label class="inline-flex items-center gap-2 cursor-pointer select-none">
                             <input class="sr-only peer" id="remember_me" name="remember" type="checkbox" />
                             <div class="w-4 h-4 rounded bg-surface-container-lowest peer-checked:bg-primary-container flex items-center justify-center transition-all border border-outline-variant peer-checked:border-primary-container">
@@ -118,15 +118,6 @@
 
                 </form>
 
-                {{-- Register link --}}
-                @if (Route::has('register'))
-                    <div class="text-center mt-6">
-                        <a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors"
-                           href="{{ route('register') }}">
-                            ¿No tiene cuenta? <span class="text-primary font-medium">Registrarse</span>
-                        </a>
-                    </div>
-                @endif
 
             </div>
         </div>
