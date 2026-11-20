@@ -20,55 +20,119 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col selection:bg-primary/20 selection:text-primary">
+<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col selection:bg-primary/20 selection:text-primary"
+      x-data="{ mobileNav: false }">
 
     {{-- ======================================================== --}}
     {{-- TOP NAVIGATION                                            --}}
     {{-- ======================================================== --}}
     <header class="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-md border-b border-outline-variant">
-        <nav class="max-w-[1600px] mx-auto px-margin md:px-margin-lg h-14 flex items-center justify-between">
+        <nav class="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-margin-lg h-14 flex items-center justify-between">
 
             {{-- Brand --}}
-            <a class="flex items-center gap-space-sm" href="{{ url('/') }}">
-                <div class="w-7 h-7 rounded-lg bg-primary-container flex items-center justify-center">
+            <a class="flex items-center gap-space-sm" href="{{ auth()->check() ? route('dashboard') : url('/') }}">
+                <div class="w-7 h-7 rounded-lg bg-primary-container flex items-center justify-center shrink-0">
                     <span class="material-symbols-outlined text-on-primary-container text-[18px]">sensors</span>
                 </div>
-                <span class="font-headline-sm text-headline-sm text-on-surface">AetherSens</span>
+                <div class="flex items-center gap-2">
+                    <span class="font-headline-sm text-headline-sm text-on-surface">AetherSens</span>
+                    <span class="hidden sm:inline text-outline text-xs">&bull;</span>
+                    <span class="hidden sm:inline font-label-sm text-label-sm text-outline">Documentación</span>
+                </div>
             </a>
 
-            {{-- Navigation links --}}
+            {{-- Navigation links ordenados según el flujo de la plataforma --}}
             <div class="hidden md:flex items-center gap-space-xl text-on-surface-variant font-body-md text-body-md">
                 <a href="{{ url('/#plataforma') }}" class="hover:text-on-surface transition-colors">Plataforma</a>
-                <a href="{{ url('/#zonas-racks') }}" class="hover:text-on-surface transition-colors">Zonas &amp; Racks</a>
-                <a href="{{ url('/#telemetria') }}" class="hover:text-on-surface transition-colors">Telemetría Activa</a>
+                <a href="{{ url('/#telemetria') }}" class="hover:text-on-surface transition-colors">Telemetría</a>
+                <a href="{{ url('/#zonas-racks') }}" class="hover:text-on-surface transition-colors">Infraestructura</a>
+                <a href="{{ url('/#equipo') }}" class="hover:text-on-surface transition-colors">Equipo</a>
                 <a href="{{ route('docs') }}" class="text-primary font-medium border-b-2 border-primary py-3.5">Ayuda / Docs</a>
             </div>
 
             {{-- Right actions --}}
-            <div class="flex items-center gap-space-md">
+            <div class="flex items-center gap-2 sm:gap-space-md">
                 @if (Route::has('login'))
                     @auth
                         <a href="{{ route('dashboard') }}"
-                           class="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-primary-container hover:bg-primary text-on-primary-container hover:text-on-primary font-label-md text-label-md transition-colors shadow-sm">
-                            <span class="material-symbols-outlined text-[16px]">dashboard</span>
-                            <span>Panel de Control</span>
+                           class="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary hover:text-on-primary-container font-label-md text-xs sm:text-label-md transition-all shadow-md group">
+                            <span class="material-symbols-outlined text-[16px] sm:text-[18px] group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+                            <span>Panel</span>
                         </a>
                     @else
                         <a href="{{ route('login') }}"
-                           class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors">
-                            Iniciar Sesión
+                           class="flex items-center gap-1.5 font-body-md text-xs sm:text-body-md text-on-surface-variant hover:text-on-surface transition-colors px-2 py-1">
+                            <span class="material-symbols-outlined text-[18px]">login</span>
+                            <span>Iniciar Sesión</span>
                         </a>
-                        <div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center text-on-surface-variant">
-                            <span class="material-symbols-outlined text-[18px]">person</span>
-                        </div>
                     @endauth
                 @endif
+
+                {{-- Botón Hamburguesa para Móvil (< 768px) --}}
+                <button type="button"
+                        @click="mobileNav = !mobileNav"
+                        class="md:hidden p-1.5 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors"
+                        aria-label="Menú principal">
+                    <span class="material-symbols-outlined text-[24px]" x-text="mobileNav ? 'close' : 'menu'">menu</span>
+                </button>
             </div>
 
         </nav>
+
+        {{-- Menú Desplegable Móvil --}}
+        <div x-show="mobileNav"
+             x-cloak
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0 -translate-y-2"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-100"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 -translate-y-2"
+             class="md:hidden bg-surface-container border-b border-outline-variant px-4 py-3 flex flex-col gap-2 font-body-md text-body-md text-on-surface-variant">
+            <a href="{{ url('/#plataforma') }}" @click="mobileNav = false" class="py-2 px-3 rounded-lg hover:bg-surface-container-high hover:text-on-surface transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px] text-primary">view_quilt</span>
+                <span>Plataforma</span>
+            </a>
+            <a href="{{ url('/#telemetria') }}" @click="mobileNav = false" class="py-2 px-3 rounded-lg hover:bg-surface-container-high hover:text-on-surface transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px] text-primary">equalizer</span>
+                <span>Telemetría</span>
+            </a>
+            <a href="{{ url('/#zonas-racks') }}" @click="mobileNav = false" class="py-2 px-3 rounded-lg hover:bg-surface-container-high hover:text-on-surface transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px] text-primary">dns</span>
+                <span>Infraestructura</span>
+            </a>
+            <a href="{{ url('/#equipo') }}" @click="mobileNav = false" class="py-2 px-3 rounded-lg hover:bg-surface-container-high hover:text-on-surface transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px] text-primary">group</span>
+                <span>Equipo</span>
+            </a>
+            <a href="{{ route('docs') }}" @click="mobileNav = false" class="py-2 px-3 rounded-lg bg-primary/10 text-primary font-medium flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px] text-primary">menu_book</span>
+                <span>Manuales / Docs</span>
+            </a>
+        </div>
     </header>
 
     <main class="flex-1 pt-14" x-data="{ activeCategory: 'all', searchQuery: '' }">
+
+        {{-- Barra de Retorno Rápido para Operadores Autenticados --}}
+        @auth
+            <div class="bg-surface-container-low border-b border-primary/20 px-margin-md md:px-margin-lg py-2.5">
+                <div class="max-w-[1600px] mx-auto flex items-center justify-between">
+                    <div class="flex items-center gap-2 font-body-sm text-body-sm">
+                        <a href="{{ route('dashboard') }}" class="text-primary hover:underline flex items-center gap-1.5 font-medium group">
+                            <span class="material-symbols-outlined text-[16px] group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+                            <span>Panel de Control</span>
+                        </a>
+                        <span class="text-outline">/</span>
+                        <span class="text-on-surface-variant">Centro de Documentación y Manuales</span>
+                    </div>
+                    <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-primary-container hover:bg-primary text-on-primary-container hover:text-on-primary font-label-sm text-label-sm transition-colors shadow-sm">
+                        <span class="material-symbols-outlined text-[15px]">dashboard</span>
+                        <span>Regresar a Telemetría</span>
+                    </a>
+                </div>
+            </div>
+        @endauth
 
         {{-- ======================================================== --}}
         {{-- HERO SECTION                                               --}}
@@ -140,7 +204,7 @@
 
                 {{-- Document 1: Manual de Usuario --}}
                 <div x-show="activeCategory === 'all' || activeCategory === 'usuario'"
-                     class="bg-surface-container rounded-xl p-8 border border-outline-variant/30 hover:border-primary/50 transition-all flex flex-col justify-between shadow-card">
+                     class="bg-surface-container rounded-xl p-5 sm:p-8 border border-outline-variant/30 hover:border-primary/50 transition-all flex flex-col justify-between shadow-card">
                     <div>
                         <div class="flex items-start justify-between mb-4">
                             <div class="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
@@ -175,10 +239,10 @@
                         </div>
                     </div>
 
-                    <div class="pt-4 border-t border-outline-variant/30 flex items-center justify-between">
+                    <div class="pt-4 border-t border-outline-variant/30 flex flex-wrap items-center justify-between gap-3">
                         <span class="font-body-sm text-body-sm text-outline">Actualizado: Octubre 2026</span>
                         <a href="{{ asset('manuals/Manual_Usuario_AetherSens_v2.4.txt') }}" download
-                           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary hover:text-on-primary-container font-label-md text-label-md font-medium transition-colors cursor-pointer shadow-md">
+                           class="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary hover:text-on-primary-container font-label-md text-xs sm:text-label-md font-medium transition-colors cursor-pointer shadow-md">
                             <span class="material-symbols-outlined text-[18px]">download</span>
                             <span>Descargar Manual</span>
                         </a>
@@ -187,7 +251,7 @@
 
                 {{-- Document 2: Manual de Instalación Hardware ESP32 --}}
                 <div x-show="activeCategory === 'all' || activeCategory === 'hardware'"
-                     class="bg-surface-container rounded-xl p-8 border border-outline-variant/30 hover:border-secondary/50 transition-all flex flex-col justify-between shadow-card">
+                     class="bg-surface-container rounded-xl p-5 sm:p-8 border border-outline-variant/30 hover:border-secondary/50 transition-all flex flex-col justify-between shadow-card">
                     <div>
                         <div class="flex items-start justify-between mb-4">
                             <div class="w-12 h-12 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary">
@@ -222,19 +286,26 @@
                         </div>
                     </div>
 
-                    <div class="pt-4 border-t border-outline-variant/30 flex items-center justify-between">
-                        <span class="font-body-sm text-body-sm text-outline">Actualizado: Octubre 2026</span>
-                        <a href="{{ asset('manuals/Manual_Instalacion_Hardware_ESP32_SHT40.txt') }}" download
-                           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-secondary hover:bg-secondary/90 text-on-secondary font-label-md text-label-md font-medium transition-colors cursor-pointer shadow-md">
-                            <span class="material-symbols-outlined text-[18px]">download</span>
-                            <span>Descargar Ficha Hardware</span>
-                        </a>
+                    <div class="pt-4 border-t border-outline-variant/30 flex flex-wrap items-center justify-between gap-2">
+                        <span class="font-body-sm text-body-sm text-outline">Actualizado: Noviembre 2026</span>
+                        <div class="flex items-center flex-wrap gap-2">
+                            <a href="{{ asset('firmware/aethersens_esp32_sht40.ino') }}" download
+                               class="inline-flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary hover:text-on-primary-container font-label-md text-xs sm:text-label-md font-medium transition-colors cursor-pointer shadow-md">
+                                <span class="material-symbols-outlined text-[18px]">code</span>
+                                <span>Sketch .INO</span>
+                            </a>
+                            <a href="{{ asset('manuals/Manual_Instalacion_Hardware_ESP32_SHT40.txt') }}" download
+                               class="inline-flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg bg-secondary hover:bg-secondary/90 text-on-secondary font-label-md text-xs sm:text-label-md font-medium transition-colors cursor-pointer shadow-md">
+                                <span class="material-symbols-outlined text-[18px]">download</span>
+                                <span>Ficha</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
 
                 {{-- Document 3: Normativa Térmica ASHRAE & Clima Montería --}}
                 <div x-show="activeCategory === 'all' || activeCategory === 'ashrae'"
-                     class="bg-surface-container rounded-xl p-8 border border-outline-variant/30 hover:border-tertiary/50 transition-all flex flex-col justify-between shadow-card">
+                     class="bg-surface-container rounded-xl p-5 sm:p-8 border border-outline-variant/30 hover:border-tertiary/50 transition-all flex flex-col justify-between shadow-card">
                     <div>
                         <div class="flex items-start justify-between mb-4">
                             <div class="w-12 h-12 rounded-xl bg-tertiary/10 border border-tertiary/20 flex items-center justify-center text-tertiary">
@@ -269,19 +340,19 @@
                         </div>
                     </div>
 
-                    <div class="pt-4 border-t border-outline-variant/30 flex items-center justify-between">
+                    <div class="pt-4 border-t border-outline-variant/30 flex flex-wrap items-center justify-between gap-3">
                         <span class="font-body-sm text-body-sm text-outline">Edición Caribe Colombiano</span>
                         <a href="{{ asset('manuals/Normativa_Termica_ASHRAE_TC9.9_Monteria.txt') }}" download
-                           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md font-medium transition-colors cursor-pointer border border-outline-variant">
+                           class="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-xs sm:text-label-md font-medium transition-colors cursor-pointer border border-outline-variant">
                             <span class="material-symbols-outlined text-[18px]">download</span>
-                            <span>Descargar Estudio Térmico</span>
+                            <span>Descargar Estudio</span>
                         </a>
                     </div>
                 </div>
 
                 {{-- Document 4: Especificaciones Protocolo MQTT --}}
                 <div x-show="activeCategory === 'all' || activeCategory === 'mqtt'"
-                     class="bg-surface-container rounded-xl p-8 border border-outline-variant/30 hover:border-primary/50 transition-all flex flex-col justify-between shadow-card">
+                     class="bg-surface-container rounded-xl p-5 sm:p-8 border border-outline-variant/30 hover:border-primary/50 transition-all flex flex-col justify-between shadow-card">
                     <div>
                         <div class="flex items-start justify-between mb-4">
                             <div class="w-12 h-12 rounded-xl bg-primary-container/20 border border-primary-container/30 flex items-center justify-center text-primary-fixed">
@@ -320,10 +391,10 @@
                         </div>
                     </div>
 
-                    <div class="pt-4 border-t border-outline-variant/30 flex items-center justify-between">
+                    <div class="pt-4 border-t border-outline-variant/30 flex flex-wrap items-center justify-between gap-3">
                         <span class="font-body-sm text-body-sm text-outline">Formato: JSON estructurado</span>
                         <a href="{{ asset('manuals/Especificaciones_Protocolo_MQTT_AetherSens.json') }}" download
-                           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md font-medium transition-colors cursor-pointer border border-outline-variant">
+                           class="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-xs sm:text-label-md font-medium transition-colors cursor-pointer border border-outline-variant">
                             <span class="material-symbols-outlined text-[18px]">download</span>
                             <span>Descargar Esquema JSON</span>
                         </a>
@@ -468,6 +539,15 @@
             </div>
         </div>
     </footer>
+
+    @auth
+        {{-- Botón Flotante para Regresar al Panel desde Cualquier Parte de la Página --}}
+        <a href="{{ route('dashboard') }}"
+           class="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-50 flex items-center gap-2 sm:gap-2.5 px-3.5 sm:px-5 py-2 sm:py-3 rounded-full bg-primary text-on-primary hover:bg-primary-container hover:text-on-primary-container shadow-2xl transition-all font-label-md text-xs sm:text-label-md hover:scale-105 border border-primary/40 group">
+            <span class="material-symbols-outlined text-[18px] sm:text-[20px] group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+            <span class="font-semibold tracking-wide">Volver al Panel</span>
+        </a>
+    @endauth
 
 </body>
 </html>

@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div x-data="{
+    <div data-settings-root x-data="{
         guardado: false,
         guardando: false,
         form: @js($settings),
@@ -29,36 +29,65 @@
                     body: JSON.stringify(this.form)
                 });
                 if (!response.ok) throw new Error('Error en backend');
+
+                // Enviar umbrales actualizados al hardware ESP32 vía MQTT (con bandera retain=true)
+                if (window.mqtt) {
+                    const isHttps = window.location.protocol === 'https:';
+                    const wsPort = isHttps ? (this.form.brokerWsPortTls || 8884) : (this.form.brokerWsPort || 8000);
+                    const wsUrl = `${isHttps ? 'wss' : 'ws'}://${this.form.brokerHost || 'broker.hivemq.com'}:${wsPort}/mqtt`;
+
+                    const client = window.mqtt.connect(wsUrl, {
+                        clientId: 'AetherSens-WebConfig-' + Math.random().toString(16).substring(2, 8),
+                        clean: true,
+                        connectTimeout: 4000
+                    });
+
+                    client.on('connect', () => {
+                        const topicConfig = this.form.topicConfig || 'intalnet/sala01/config';
+                        const configPayload = JSON.stringify({
+                            temp_adv: Number(this.form.tempMax),
+                            temp_crit: Number(this.form.tempCritica),
+                            gas_humo: Number(this.form.gasAdcUmbral)
+                        });
+
+                        client.publish(topicConfig, configPayload, { retain: true, qos: 1 }, (err) => {
+                            if (!err) {
+                                console.log('[AetherSens] Límites transmitidos al ESP32 vía MQTT (retained):', configPayload);
+                            }
+                            client.end();
+                        });
+                    });
+                }
             } catch (err) {
-                console.warn('[Intalnet] Ajustes guardados en navegador; error al sincronizar backend:', err);
+                console.warn('[Intalnet] Ajustes guardados en navegador; error al sincronizar backend o MQTT:', err);
             } finally {
                 this.guardando = false;
                 this.guardado = true;
                 setTimeout(() => this.guardado = false, 4000);
             }
         }
-    }" class="flex flex-col w-full gap-y-8">
+    }" class="flex flex-col w-full gap-y-6 sm:gap-y-8">
 
         {{-- ============================================================ --}}
         {{-- PAGE HEADER                                                  --}}
         {{-- ============================================================ --}}
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
             <div>
-                <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">
+                <span class="font-label-sm text-[11px] sm:text-label-sm uppercase tracking-wider text-outline block">
                     AetherSens Enterprise &bull; Parámetros de Operación &bull; Montería, CO
                 </span>
-                <h1 class="font-headline-lg text-headline-lg text-on-surface mt-1">
+                <h1 class="font-headline-lg text-2xl sm:text-headline-lg text-on-surface mt-1">
                     Configuración del Sistema
                 </h1>
             </div>
 
-            <div class="flex items-center gap-3">
-                <span x-show="guardado" x-transition class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-tertiary/15 text-tertiary font-label-md text-label-md border border-tertiary/30">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                <span x-show="guardado" x-transition class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-tertiary/15 text-tertiary font-label-md text-xs sm:text-label-md border border-tertiary/30">
                     <span class="material-symbols-outlined text-[18px]">check_circle</span>
                     <span>Parámetros guardados y sincronizados</span>
                 </span>
 
-                <button @click="guardar()" :disabled="guardando" class="flex items-center gap-2 px-5 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container transition-colors font-label-md text-label-md font-medium shadow-md cursor-pointer disabled:opacity-50">
+                <button @click="guardar()" :disabled="guardando" class="flex items-center gap-2 px-4 sm:px-5 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container transition-colors font-label-md text-xs sm:text-label-md font-medium shadow-md cursor-pointer disabled:opacity-50">
                     <span class="material-symbols-outlined text-[18px]" :class="guardando ? 'animate-spin' : ''">
                         <span x-text="guardando ? 'sync' : 'save'">save</span>
                     </span>
@@ -70,7 +99,7 @@
         {{-- ============================================================ --}}
         {{-- 1. ENVIRONMENTAL THRESHOLDS SECTION                          --}}
         {{-- ============================================================ --}}
-        <div class="rounded-xl bg-surface-container p-8 shadow-card border border-outline-variant/30">
+        <div class="rounded-xl bg-surface-container p-4 sm:p-6 lg:p-8 shadow-card border border-outline-variant/30">
             <div class="flex items-center gap-3 pb-4 mb-6 border-b border-outline-variant/30">
                 <div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
                     <span class="material-symbols-outlined text-[20px]">tune</span>
@@ -138,7 +167,7 @@
         {{-- ============================================================ --}}
         {{-- 2. MQTT & ESP32 HARDWARE CONNECTION PARAMETERS               --}}
         {{-- ============================================================ --}}
-        <div class="rounded-xl bg-surface-container p-8 shadow-card border border-outline-variant/30">
+        <div class="rounded-xl bg-surface-container p-4 sm:p-6 lg:p-8 shadow-card border border-outline-variant/30">
             <div class="flex items-center gap-3 pb-4 mb-6 border-b border-outline-variant/30">
                 <div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary">
                     <span class="material-symbols-outlined text-[20px]">hub</span>
@@ -200,6 +229,13 @@
                     <span class="text-[11px] text-outline">mqtt_topic_alerta del sketch (cambios de estado y silenciamiento)</span>
                 </div>
 
+                {{-- Topic Configuración Remota (ESP32) --}}
+                <div class="space-y-1.5">
+                    <label class="block font-label-sm text-label-sm text-on-surface">Tópico de Configuración Remota (ESP32)</label>
+                    <input type="text" x-model="form.topicConfig" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-primary font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
+                    <span class="text-[11px] text-outline">mqtt_topic_config del sketch para actualizar umbrales dinámicos</span>
+                </div>
+
                 {{-- Intervalo --}}
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Intervalo de Transmisión (Segundos)</label>
@@ -227,7 +263,7 @@
         {{-- ============================================================ --}}
         {{-- 3. ALERTS & OPERATIONAL PREFERENCES                          --}}
         {{-- ============================================================ --}}
-        <div class="rounded-xl bg-surface-container p-8 shadow-card border border-outline-variant/30">
+        <div class="rounded-xl bg-surface-container p-4 sm:p-6 lg:p-8 shadow-card border border-outline-variant/30">
             <div class="flex items-center gap-3 pb-4 mb-6 border-b border-outline-variant/30">
                 <div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary">
                     <span class="material-symbols-outlined text-[20px]">notifications_active</span>

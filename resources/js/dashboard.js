@@ -5,8 +5,12 @@ window.ApexCharts = ApexCharts;
 window.mqtt = mqtt;
 
 const STORAGE_KEY = 'intalnet_settings';
+const TELEMETRY_STORAGE_KEY = 'intalnet_telemetry_history';
+const INCIDENTS_STORAGE_KEY = 'intalnet_incident_logs';
 const MAX_CHART_POINTS = 60;
 const MAX_ALERT_ROWS = 150;
+const MAX_STORED_SAMPLES = 1000;
+const MAX_STORED_INCIDENTS = 150;
 const ADC_FULL_SCALE = 4095;
 
 const DEFAULT_SETTINGS = {
@@ -125,8 +129,8 @@ export function initDashboard() {
     let useSecureSocket = window.location.protocol === 'https:';
     let reconnectAttempt = 0;
 
-    const temperatureSeries = [];
-    const humiditySeries = [];
+    let temperatureSeries = [];
+    let humiditySeries = [];
 
     const element = (id) => document.getElementById(id);
 
@@ -240,6 +244,34 @@ export function initDashboard() {
     const evaluateGas = (value) => {
         const threshold = numberOr(settings.gasAdcUmbral, DEFAULT_SETTINGS.gasAdcUmbral);
         return value >= threshold ? 'critical' : 'normal';
+    };
+
+    const calculateHeatIndex = (tempC, humRH) => {
+        if (tempC === null || tempC === undefined || humRH === null || humRH === undefined) {
+            return null;
+        }
+        const T = Number(tempC);
+        const RH = Number(humRH);
+        if (!Number.isFinite(T) || !Number.isFinite(RH)) {
+            return null;
+        }
+
+        if (T < 20) {
+            return T;
+        }
+
+        const Tf = T * 1.8 + 32;
+        let hiF = 0.5 * (Tf + 61.0 + ((Tf - 68.0) * 1.2) + (RH * 0.094));
+
+        if (hiF >= 80) {
+            hiF = -42.379 + 2.04901523 * Tf + 10.14333127 * RH
+                - 0.22475541 * Tf * RH - 0.00683783 * Tf * Tf
+                - 0.05481717 * RH * RH + 0.00122874 * Tf * Tf * RH
+                + 0.00085282 * Tf * RH * RH - 0.00000199 * Tf * Tf * RH * RH;
+        }
+
+        const hiC = (hiF - 32) / 1.8;
+        return Number(hiC.toFixed(1));
     };
 
     const applyThresholdsToLabels = () => {
@@ -425,6 +457,36 @@ export function initDashboard() {
         if (counter) {
             counter.textContent = `${tbody.children.length} registros`;
         }
+
+        // Guardar en el log persistente de incidentes ÚNICAMENTE si es una condición de alerta real (warning o critical)
+        if (status === 'critical' || status === 'warning') {
+            try {
+                const rawInc = window.localStorage.getItem(INCIDENTS_STORAGE_KEY);
+                const incList = rawInc ? JSON.parse(rawInc) : [];
+                const dateObj = new Date();
+                const dayStr = String(dateObj.getDate()).padStart(2, '0');
+                const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                const displayDate = `${dayStr} ${months[dateObj.getMonth()]}`;
+
+                incList.unshift({
+                    id: Date.now() + Math.floor(Math.random() * 1000),
+                    fecha: dateObj.toISOString().slice(0, 10),
+                    fechaDisplay: displayDate,
+                    hora: formatUtcMinus5(),
+                    sensor: event.includes('Humo') ? 'Detección de Humo' : (event.includes('Humedad') ? 'Humedad Relativa' : 'Temperatura'),
+                    zona: settings.zona || DEFAULT_SETTINGS.zona,
+                    valor: detail,
+                    umbral: status === 'critical' ? 'Umbral Crítico' : 'Umbral Advertencia',
+                    severidad: status === 'critical' ? 'critical' : 'warning',
+                    estado: 'Pendiente',
+                    label: status === 'critical' ? 'Crítico' : 'Advertencia'
+                });
+                while (incList.length > MAX_STORED_INCIDENTS) {
+                    incList.pop();
+                }
+                window.localStorage.setItem(INCIDENTS_STORAGE_KEY, JSON.stringify(incList));
+            } catch (e) {}
+        }
     };
 
     const renderBuzzerState = (silenced, state) => {
@@ -457,6 +519,19 @@ export function initDashboard() {
         if (humidity !== null) {
             setText('metric-hum-val', humidity.toFixed(1));
             setBadge('metric-hum-badge', evaluateHumidity(humidity));
+        }
+
+        if (temperature !== null && humidity !== null) {
+            const heatIndex = calculateHeatIndex(temperature, humidity);
+            if (heatIndex !== null) {
+                setText('metric-heat-val', heatIndex.toFixed(1));
+                const heatStatus = heatIndex < 27 ? 'normal' : (heatIndex < 35 ? 'warning' : 'critical');
+                const heatLabel = heatIndex < 27 ? 'Óptimo' : (heatIndex < 35 ? 'Precaución' : 'Peligro');
+                setBadge('metric-heat-badge', heatStatus, heatLabel);
+                setText('metric-heat-range', heatIndex < 27
+                    ? 'Índice ASHRAE A1 (Confortable)'
+                    : (heatIndex < 35 ? 'Bochorno moderado en sala' : 'Riesgo de estrés térmico'));
+            }
         }
 
         if (gas !== null) {
@@ -494,6 +569,52 @@ export function initDashboard() {
 
         if (temperature !== null && humidity !== null) {
             pushPoint(temperature, humidity, timestamp);
+
+            try {
+                const rawHist = window.localStorage.getItem(TELEMETRY_STORAGE_KEY);
+                const hist = rawHist ? JSON.parse(rawHist) : [];
+                const heatIdx = calculateHeatIndex(temperature, humidity);
+
+                hist.push({
+                    timestamp,
+                    time,
+                    temp: Number(temperature.toFixed(1)),
+                    hum: Number(humidity.toFixed(1)),
+                    heat: heatIdx !== null ? Number(heatIdx.toFixed(1)) : Number(temperature.toFixed(1)),
+                    gas: gas !== null ? Math.round(gas) : 0,
+                    status: espState ? (ESP_STATE_MAP[espState]?.status || 'normal') : 'normal',
+                    label: espState ? (ESP_STATE_MAP[espState]?.label || 'Normal') : 'Normal',
+                    zona: settings.zona || DEFAULT_SETTINGS.zona,
+                });
+                while (hist.length > MAX_STORED_SAMPLES) {
+                    hist.shift();
+                }
+                window.localStorage.setItem(TELEMETRY_STORAGE_KEY, JSON.stringify(hist));
+            } catch (e) {}
+
+            // Persistencia asíncrona permanente en la Base de Datos central
+            try {
+                const activeRoom = window.localStorage.getItem('intalnet_selected_room') || 'sala01';
+                fetch('/api/telemetry', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        temperatura: temperature,
+                        humedad: humidity,
+                        sensacion_termica: calculateHeatIndex(temperature, humidity),
+                        gas: gas || 0,
+                        estado: espState || 'NORMAL',
+                        silenciado: silenced,
+                        uptime_s: payload.uptime_s || null,
+                        dispositivo: payload.dispositivo || 'ESP32_SALA01',
+                        sala_id: payload.sala_id || activeRoom,
+                        zona: settings.zona || DEFAULT_SETTINGS.zona,
+                    })
+                }).catch(() => {});
+            } catch (e) {}
         }
 
         const emptyState = element('telemetry-empty-state');
@@ -602,17 +723,17 @@ export function initDashboard() {
                 return;
             }
 
-            if (topic === settings.topic) {
+            if (topic === settings.topic || topic.endsWith('/telemetria')) {
                 handleTelemetry(payload);
                 return;
             }
 
-            if (topic === settings.topicEstado) {
+            if (topic === settings.topicEstado || topic.endsWith('/estado')) {
                 handleDeviceState(payload);
                 return;
             }
 
-            if (topic === settings.topicAlerta) {
+            if (topic === settings.topicAlerta || topic.endsWith('/alerta')) {
                 handleAlert(payload);
             }
         });
@@ -639,29 +760,45 @@ export function initDashboard() {
         });
     };
 
-    const clearButton = element('telemetry-clear-alerts');
-    if (clearButton) {
-        clearButton.addEventListener('click', () => {
-            const tbody = element('telemetry-table-body');
-            if (tbody) {
-                tbody.innerHTML = `
-                    <tr id="telemetry-alert-empty">
-                        <td colspan="4" class="py-8 px-8 text-center text-outline font-body-sm text-body-sm">
-                            Sin eventos registrados hoy. El ESP32 publica las alertas en el tópico de alertas.
-                        </td>
-                    </tr>
-                `;
-            }
-            const counter = element('telemetry-alert-count');
-            if (counter) {
-                counter.textContent = '0 registros';
-            }
-        });
-    }
-
     applyThresholdsToLabels();
     renderChart();
     connect();
+
+    // Reaccionar a cambios en el selector de salas
+    window.addEventListener('intalnet:room-changed', (e) => {
+        const roomId = e.detail?.roomId || 'sala01';
+        const baseTopic = roomId === 'all' ? 'intalnet/+/telemetria' : `intalnet/${roomId}/telemetria`;
+        const estadoTopic = roomId === 'all' ? 'intalnet/+/estado' : `intalnet/${roomId}/estado`;
+        const alertaTopic = roomId === 'all' ? 'intalnet/+/alerta' : `intalnet/${roomId}/alerta`;
+
+        if (client && client.connected) {
+            try {
+                client.unsubscribe([settings.topic, settings.topicEstado, settings.topicAlerta]);
+            } catch (err) {}
+            settings.topic = baseTopic;
+            settings.topicEstado = estadoTopic;
+            settings.topicAlerta = alertaTopic;
+            client.subscribe([baseTopic, estadoTopic, alertaTopic], { qos: 0 });
+        }
+
+        temperatureSeries = [];
+        humiditySeries = [];
+        if (chart) {
+            chart.updateSeries([
+                { name: 'Temperatura', data: [] },
+                { name: 'Humedad', data: [] },
+            ], true);
+        }
+
+        const emptyState = element('telemetry-empty-state');
+        if (emptyState) emptyState.classList.remove('hidden');
+
+        const zoneEl = element('esp32-zone-text');
+        if (zoneEl) {
+            zoneEl.textContent = roomId === 'all' ? 'Todas las Salas (NOC)' : `Sala ${roomId.replace('sala', '')}`;
+        }
+        setConnectionState('broker', `Broker conectado · esperando telemetría de ${roomId}`);
+    });
 
     window.addEventListener('beforeunload', () => {
         clearTimeout(watchdogTimer);
