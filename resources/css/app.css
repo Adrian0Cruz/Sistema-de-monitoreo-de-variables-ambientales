@@ -12,6 +12,30 @@
 }
 
 @layer base {
+    :root,
+    html {
+        color-scheme: dark;
+    }
+
+    /* Campos de fecha, hora y controles nativos en modo oscuro */
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"] {
+        color-scheme: dark;
+        background-color: transparent;
+        color: inherit;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        opacity: 0.75;
+        transition: opacity 0.15s ease;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
+    }
+
     /* Eliminar el caret o punto de inserción en elementos no editables de la interfaz */
     *, *::before, *::after {
         caret-color: transparent !important;

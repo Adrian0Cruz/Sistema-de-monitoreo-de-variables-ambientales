@@ -27,10 +27,10 @@ $dotClasses = match($status) {
 };
 @endphp
 
-<div class="rounded-xl bg-surface-container p-8 flex flex-col justify-between shadow-card transition-colors hover:bg-surface-container-high">
+<div class="rounded-xl bg-surface-container p-5 sm:p-6 lg:p-8 flex flex-col justify-between shadow-card transition-colors hover:bg-surface-container-high border border-outline-variant/30">
 
     {{-- Header: Icon + Title + Status Badge --}}
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex items-center justify-between mb-5 sm:mb-8">
         <div class="flex items-center gap-2.5">
             <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center {{ $iconColor }}">
                 <span class="material-symbols-outlined text-[20px]">{{ $icon }}</span>

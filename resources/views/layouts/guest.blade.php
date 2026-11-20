@@ -28,11 +28,11 @@
 
     {{-- ===================== TOP HEADER ===================== --}}
     <header class="fixed top-0 left-0 right-0 z-40 bg-surface-container-low/90 backdrop-blur-md border-b border-outline-variant">
-        <div class="h-14 w-full max-w-7xl mx-auto px-margin-md flex items-center justify-between">
+        <div class="h-14 w-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
 
             {{-- Brand --}}
             <a class="flex items-center gap-space-sm" href="{{ url('/') }}">
-                <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center">
+                <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0">
                     <span class="material-symbols-outlined text-primary text-[18px]">sensors</span>
                 </div>
                 <span class="font-headline-sm text-headline-sm text-on-surface tracking-tight">AetherSens</span>
@@ -40,12 +40,12 @@
 
             {{-- Node status pill --}}
             <div class="flex items-center gap-space-xs text-on-surface-variant font-code-sm text-code-sm">
-                <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
-                <span class="tracking-wide uppercase">NODO 01 NOMINAL</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-tertiary shrink-0"></span>
+                <span class="tracking-wide uppercase hidden sm:inline">NODO 01 NOMINAL</span>
             </div>
 
             {{-- User icon (decorative) --}}
-            <div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center text-on-surface-variant">
+            <div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center text-on-surface-variant shrink-0">
                 <span class="material-symbols-outlined text-[18px]">person</span>
             </div>
 
@@ -53,7 +53,7 @@
     </header>
 
     {{-- ===================== MAIN CONTENT ===================== --}}
-    <main class="flex-1 flex flex-col justify-center items-center pt-14 pb-space-xl px-margin-md">
+    <main class="flex-1 flex flex-col justify-center items-center pt-14 pb-space-xl px-4 sm:px-6">
         {{ $slot }}
     </main>
 

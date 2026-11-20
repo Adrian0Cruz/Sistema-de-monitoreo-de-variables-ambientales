@@ -8,4 +8,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { initDashboard } = await import('./dashboard');
         initDashboard();
     }
+
+    if (document.querySelector('[data-settings-root]')) {
+        const { default: mqtt } = await import('mqtt');
+        window.mqtt = mqtt;
+    }
 });
