@@ -48,7 +48,9 @@ Microcontrolador ESP32 DevKit USB-C + Sensor SHT40 (I2C) / MQ-2 para Sala Técni
 
 4. CONFIGURACIÓN DEL FIRMWARE (ARDUINO / ESP-IDF)
 --------------------------------------------------------------------------------
-- Broker MQTT: broker.hivemq.com
+- Sketch Oficial Listo para Subir: firmware/aethersens_esp32_sht40/aethersens_esp32_sht40.ino
+- Descarga directa web: public/firmware/aethersens_esp32_sht40.ino
+- Broker MQTT: broker.hivemq.com (o contenedor Mosquitto local en producción)
 - Puerto TCP / SSL: 1883 (o 8883 con certificado TLS)
 - Tópicos de publicación:
   - Telemetría: intalnet/sala01/telemetria
@@ -68,6 +70,46 @@ Microcontrolador ESP32 DevKit USB-C + Sensor SHT40 (I2C) / MQ-2 para Sala Técni
 - Tópico de alertas (retained): {"evento":"CAMBIO_ESTADO","nuevo_estado":"CRITICO",
   "temperatura":31.9,"gas":1495} o {"evento":"SILENCIADO_MANUAL","mensaje":"..."}
 - Cadencia de muestreo recomendada: 3000 ms (3 segundos).
+
+4.1. CALIBRACIÓN DINÁMICA DE UMBRALES Y CONTROL REMOTO DEL BUZZER DESDE LA WEB
+--------------------------------------------------------------------------------
+Para que la bocina (buzzer) se active según los límites definidos en la interfaz
+web y NO por valores fijos "hardcodeados" en el firmware del ESP32:
+
+1. El panel web de Configuración publica un mensaje con bandera RETAIN a:
+   Tópico de configuración: intalnet/sala01/config
+   Payload JSON:
+   {
+     "temp_adv": 28.0,
+     "temp_crit": 35.0,
+     "gas_humo": 1500
+   }
+
+2. En el ESP32, suscribirse en el método setup() al tópico de configuración:
+   mqttClient.subscribe("intalnet/sala01/config");
+
+3. En el callback MQTT de recepción del ESP32:
+   void mqttCallback(char* topic, byte* payload, unsigned int length) {
+       if (String(topic) == "intalnet/sala01/config") {
+           StaticJsonDocument<256> doc;
+           deserializeJson(doc, payload, length);
+           if (doc.containsKey("temp_adv"))  TEMP_UMBRAL_ADVERTENCIA = doc["temp_adv"];
+           if (doc.containsKey("temp_crit")) TEMP_UMBRAL_CRITICO     = doc["temp_crit"];
+           if (doc.containsKey("gas_humo"))  MQ2_UMBRAL_HUMO         = doc["gas_humo"];
+
+           // Persistir en memoria no volátil (NVS) con la librería Preferences.h
+           preferences.begin("aethersens", false);
+           preferences.putFloat("t_adv", TEMP_UMBRAL_ADVERTENCIA);
+           preferences.putFloat("t_crit", TEMP_UMBRAL_CRITICO);
+           preferences.putInt("gas_h", MQ2_UMBRAL_HUMO);
+           preferences.end();
+       }
+   }
+
+4. Al iniciar el ESP32, leer los valores guardados en NVS. Si no existen, usar
+   los valores de fábrica (28.0 °C / 35.0 °C / 1500 ADC).
+   Gracias a MQTT Retain, apenas el ESP32 se conecta al broker, recibirá de
+   inmediato la última configuración guardada en el panel web.
 
 5. CONSUMIR LOS DATOS DESDE EL PANEL WEB
 --------------------------------------------------------------------------------
