@@ -1,0 +1,143 @@
+services:
+  # ============================================================================
+  # 1. SERVIDOR DE APLICACIÓN LARAVEL (PHP 8.3 FPM)
+  # ============================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aethersens-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini:ro
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      APP_DEBUG: ${APP_DEBUG:-true}
+    networks:
+      - aethersens-net
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ============================================================================
+  # 2. SERVIDOR WEB NGINX (Reverse Proxy & HTTP/Static Assets)
+  # ============================================================================
+  web:
+    image: nginx:alpine
+    container_name: aethersens-web
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:80"
+    volumes:
+      - .:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - aethersens-net
+    depends_on:
+      - app
+
+  # ============================================================================
+  # 3. BASE DE DATOS RELACIONAL (MySQL 8.0)
+  # ============================================================================
+  db:
+    image: mysql:8.0
+    container_name: aethersens-db
+    restart: unless-stopped
+    ports:
+      - "${FORWARD_DB_PORT:-3306}:3306"
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-aethersens}
+      MYSQL_USER: ${DB_USERNAME:-aethersens}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    volumes:
+      - aethersens-db-data:/var/lib/mysql
+    networks:
+      - aethersens-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ============================================================================
+  # 4. CACHÉ & SESIONES DE ALTA VELOCIDAD (Redis)
+  # ============================================================================
+  redis:
+    image: redis:alpine
+    container_name: aethersens-redis
+    restart: unless-stopped
+    ports:
+      - "${FORWARD_REDIS_PORT:-6379}:6379"
+    volumes:
+      - aethersens-redis-data:/data
+    networks:
+      - aethersens-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ============================================================================
+  # 5. WORKER DE COLAS DE TELEMETRÍA (Laravel Queue)
+  # ============================================================================
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aethersens-queue
+    restart: unless-stopped
+    command: php artisan queue:work --verbose --tries=3 --timeout=90
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini:ro
+    networks:
+      - aethersens-net
+    depends_on:
+      - app
+      - redis
+
+  # ============================================================================
+  # 6. BROKER MQTT LOCAL (Mosquitto para ESP32 nativo y WebSockets)
+  # ============================================================================
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: aethersens-mosquitto
+    restart: unless-stopped
+    ports:
+      - "${MQTT_PORT:-1883}:1883"
+      - "${MQTT_WS_PORT:-9001}:9001"
+    volumes:
+      - ./docker/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - aethersens-mosquitto-data:/mosquitto/data
+      - aethersens-mosquitto-log:/mosquitto/log
+    networks:
+      - aethersens-net
+
+# ==============================================================================
+# VOLÚMENES PERSISTENTES
+# ==============================================================================
+volumes:
+  aethersens-db-data:
+    driver: local
+  aethersens-redis-data:
+    driver: local
+  aethersens-mosquitto-data:
+    driver: local
+  aethersens-mosquitto-log:
+    driver: local
+
+# ==============================================================================
+# RED DE COMUNICACIÓN AISLADA
+# ==============================================================================
+networks:
+  aethersens-net:
+    driver: bridge
+
