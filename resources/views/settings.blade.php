@@ -123,14 +123,14 @@
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Temperatura Máxima Advertencia (°C)</label>
                     <input type="number" step="0.5" x-model.number="form.tempMax" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-secondary font-code-sm text-code-sm focus:ring-1 focus:ring-secondary focus:border-secondary">
-                    <span class="text-[11px] text-outline">TEMP_UMBRAL_ADVERTENCIA del firmware (28.0 °C)</span>
+                    <span class="text-[11px] text-outline">TEMP_UMBRAL_ADVERTENCIA del firmware (27.0 °C) — Límite recomendado ASHRAE TC 9.9</span>
                 </div>
 
                 {{-- Temperatura Crítica --}}
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Temperatura Crítica (°C)</label>
                     <input type="number" step="0.5" x-model.number="form.tempCritica" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-error font-code-sm text-code-sm focus:ring-1 focus:ring-error focus:border-error">
-                    <span class="text-[11px] text-outline">TEMP_UMBRAL_CRITICO del firmware (35.0 °C) — LED rojo + buzzer</span>
+                    <span class="text-[11px] text-outline">TEMP_UMBRAL_CRITICO del firmware (31.0 °C) — Dispara LED rojo + buzzer sin humo</span>
                 </div>
 
                 {{-- Humedad Mínima --}}
@@ -158,7 +158,7 @@
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Sensibilidad Sensor MQ-2 (ADC)</label>
                     <input type="number" step="50" x-model.number="form.gasAdcUmbral" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-tertiary font-code-sm text-code-sm focus:ring-1 focus:ring-tertiary focus:border-tertiary">
-                    <span class="text-[11px] text-outline">MQ2_UMBRAL_HUMO del firmware (1500 ADC sobre 0–4095) — dispara estado HUMO_DETECTADO</span>
+                    <span class="text-[11px] text-outline">MQ2_UMBRAL_HUMO del firmware (3300 ADC sobre 0–4095) — casi al máximo, dispara alarma sonora</span>
                 </div>
 
             </div>

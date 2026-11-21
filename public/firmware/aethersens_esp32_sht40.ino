@@ -12,7 +12,7 @@
         * LED Amarillo: GPIO 32 (Advertencia)
         * LED Rojo:     GPIO 33 (Crítico / Humo)
     - Buzzer / Alarma Sonora: GPIO 26 (Driver con transistor 2N2222)
-    - Pulsador Industrial NO: GPIO 27 (Silenciamiento manual con pull-up interno)
+    - Pulsador Industrial NO: GPIO 14 (Silenciamiento manual con pull-up interno)
 
   Librerías Utilizadas en Arduino IDE:
     - WiFi (incluida nativamente en el core ESP32)
@@ -22,7 +22,7 @@
     - Wire (incluida nativamente en el core ESP32 para comunicación I2C)
 
   Universidad de Córdoba - Montería, Colombia
-  Desarrolladores: Cristian González, Jesús Hernández, Julio Nova, Jorge Oviedo
+  Desarrolladores: Cristian González, Jesús Hernández, Julio Nova, Jorge Oviedo, Dariel Ortega
  ================================================================================
 */
 
@@ -65,7 +65,7 @@ const char* TOPIC_CONFIG     = "intalnet/sala01/config";
 #define PIN_LED_AMARILLO  32
 #define PIN_LED_ROJO      33
 #define PIN_BUZZER        26
-#define PIN_PULSADOR_NO   27
+#define PIN_PULSADOR_NO   14
 
 // Dirección I2C del sensor SHT40:
 #define SHT40_I2C_ADDR    0x44
@@ -75,9 +75,10 @@ const char* TOPIC_CONFIG     = "intalnet/sala01/config";
 // 3. VARIABLES GLOBALES Y UMBRALES DINÁMICOS
 // ==============================================================================
 // Umbrales calibrables dinámicamente desde la interfaz web de AetherSens:
-float tempUmbralAdvertencia = 28.0; // °C
-float tempUmbralCritico     = 35.0; // °C -> Activa LED Rojo y Buzzer
-int   mq2UmbralHumo         = 1500; // Escala ADC (0 - 4095)
+// Valores basados en estándar ASHRAE TC 9.9 / TIA-942 para Salas Técnicas de Telecomunicación:
+float tempUmbralAdvertencia = 27.0; // °C -> Límite superior recomendado ASHRAE (Pre-alarma / LED Amarillo)
+float tempUmbralCritico     = 31.0; // °C -> Temperatura Crítica (Alarma: LED Rojo y Buzzer sin necesidad de humo)
+int   mq2UmbralHumo         = 3300; // Escala ADC (0 - 4095) -> Humo casi al máximo para disparar alarma
 
 // Estados operativos:
 enum EstadoOperativo {
@@ -92,7 +93,7 @@ EstadoOperativo estadoAnterior = ESTADO_NORMAL;
 
 bool  buzzerSilenciado      = false;
 unsigned long ultimoEnvioMs = 0;
-const unsigned long INTERVALO_ENVIO_MS = 3000; // Cadencia: cada 3 segundos
+const unsigned long INTERVALO_ENVIO_MS = 5000; // Cadencia: cada 5 segundos
 
 // Objetos del sistema:
 WiFiClient espClient;
@@ -157,9 +158,9 @@ int leerMQ2() {
  */
 void cargarUmbralesDesdeNVS() {
   preferences.begin("aethersens", true); // Modo sólo lectura
-  tempUmbralAdvertencia = preferences.getFloat("t_adv", 28.0);
-  tempUmbralCritico     = preferences.getFloat("t_crit", 35.0);
-  mq2UmbralHumo         = preferences.getInt("gas_h", 1500);
+  tempUmbralAdvertencia = preferences.getFloat("t_adv", 27.0);
+  tempUmbralCritico     = preferences.getFloat("t_crit", 31.0);
+  mq2UmbralHumo         = preferences.getInt("gas_h", 3300);
   preferences.end();
 
   Serial.println("[NVS] Umbrales cargados de memoria Flash:");
@@ -269,6 +270,27 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     DeserializationError error = deserializeJson(doc, mensaje);
 
     if (!error) {
+      // ── Comando remoto de silenciamiento desde la web ──
+      if (!doc["silenciar_buzzer"].isNull() && doc["silenciar_buzzer"].as<bool>() == true) {
+        if ((estadoActual == ESTADO_CRITICO || estadoActual == ESTADO_HUMO_DETECTADO) && !buzzerSilenciado) {
+          buzzerSilenciado = true;
+          digitalWrite(PIN_BUZZER, LOW);
+          Serial.println("[ALERTA] Buzzer silenciado remotamente desde la interfaz web.");
+
+          JsonDocument silDoc;
+          silDoc["evento"]      = "SILENCIADO_REMOTO";
+          silDoc["dispositivo"] = DISPOSITIVO_ID;
+          silDoc["sala_id"]     = SALA_ID;
+          silDoc["mensaje"]     = "Alarma sonora silenciada remotamente desde el panel web AetherSens";
+          silDoc["timestamp_s"] = millis() / 1000;
+
+          char silBuf[256];
+          serializeJson(silDoc, silBuf);
+          mqttClient.publish(TOPIC_ALERTA, silBuf, false);
+        }
+        return; // Comando de silenciamiento procesado, no es calibración
+      }
+
       float nuevoAdv  = (!doc["temp_adv"].isNull())  ? doc["temp_adv"].as<float>()  : tempUmbralAdvertencia;
       float nuevoCrit = (!doc["temp_crit"].isNull()) ? doc["temp_crit"].as<float>() : tempUmbralCritico;
       int   nuevoGas  = (!doc["gas_humo"].isNull())  ? doc["gas_humo"].as<int>()    : mq2UmbralHumo;
@@ -414,7 +436,7 @@ void loop() {
   // 2. Verificar pulsador industrial de silenciamiento:
   verificarPulsadorSilenciamiento();
 
-  // 3. Cadencia de lectura y telemetría (cada 3 segundos):
+  // 3. Cadencia de lectura y telemetría (cada 5 segundos):
   unsigned long ahora = millis();
   if (ahora - ultimoEnvioMs >= INTERVALO_ENVIO_MS) {
     ultimoEnvioMs = ahora;
@@ -431,15 +453,38 @@ void loop() {
 
     int nivelGas = leerMQ2();
 
-    // 4. Evaluar estado operativo basado en los umbrales configurados:
-    if (nivelGas >= mq2UmbralHumo) {
-      estadoActual = ESTADO_HUMO_DETECTADO;
-    } else if (temperatura >= tempUmbralCritico) {
-      estadoActual = ESTADO_CRITICO;
-    } else if (temperatura >= tempUmbralAdvertencia) {
-      estadoActual = ESTADO_ADVERTENCIA;
+    // 4. Evaluar estado operativo con histéresis y criterios para sala técnica (ASHRAE TC 9.9):
+    //    - El humo solo activa la alarma (Buzzer + LED Rojo) si está casi al máximo (>= 3300 ADC).
+    //    - La alarma se dispara por alta temperatura crítica (>= 31.0 °C) sin necesidad de humo.
+    //    - Rango 27.0 °C a 30.9 °C o humo moderado (>= 1800 ADC) genera ADVERTENCIA (LED Amarillo, sin buzzer).
+    const int   HISTERESIS_GAS         = 150; // Margen de despeje para sensor MQ-2 (ADC)
+    const float HISTERESIS_TEMP        = 0.5; // Margen de despeje para temperatura (°C)
+    const int   MQ2_UMBRAL_ADVERTENCIA = 1800; // Nivel moderado de gas/humo para advertencia preventiva
+
+    bool humoAlarma = (estadoActual == ESTADO_HUMO_DETECTADO)
+                        ? (nivelGas >= (mq2UmbralHumo - HISTERESIS_GAS))
+                        : (nivelGas >= mq2UmbralHumo);
+
+    bool tempCritica = (estadoActual == ESTADO_CRITICO)
+                        ? (temperatura >= (tempUmbralCritico - HISTERESIS_TEMP))
+                        : (temperatura >= tempUmbralCritico);
+
+    bool tempAdvertencia = (estadoActual == ESTADO_ADVERTENCIA)
+                        ? (temperatura >= (tempUmbralAdvertencia - HISTERESIS_TEMP))
+                        : (temperatura >= tempUmbralAdvertencia);
+
+    bool gasAdvertencia = (estadoActual == ESTADO_ADVERTENCIA)
+                        ? (nivelGas >= (MQ2_UMBRAL_ADVERTENCIA - HISTERESIS_GAS))
+                        : (nivelGas >= MQ2_UMBRAL_ADVERTENCIA);
+
+    if (humoAlarma) {
+      estadoActual = ESTADO_HUMO_DETECTADO; // Dispara LED Rojo y Buzzer (Humo casi al tope)
+    } else if (tempCritica) {
+      estadoActual = ESTADO_CRITICO;         // Dispara LED Rojo y Buzzer (Alta temperatura sin necesidad de humo)
+    } else if (tempAdvertencia || gasAdvertencia) {
+      estadoActual = ESTADO_ADVERTENCIA;     // LED Amarillo (Advertencia preventiva sin buzzer)
     } else {
-      estadoActual = ESTADO_NORMAL;
+      estadoActual = ESTADO_NORMAL;          // LED Verde (Condiciones óptimas según estándar)
     }
 
     // 5. Actualizar actuadores físicos locales (Semáforo LED y Buzzer):

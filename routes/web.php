@@ -14,12 +14,12 @@ if (! function_exists('getAetherSensSettings')) {
         // tópicos MQTT declarados en el sketch de Intalnet).
         $default = [
             'tempMin' => 18.0,
-            'tempMax' => 35.0,
-            'tempCritica' => 38.0,
+            'tempMax' => 27.0,
+            'tempCritica' => 31.0,
             'humMin' => 40.0,
             'humMax' => 60.0,
             'humCritica' => 75.0,
-            'gasAdcUmbral' => 1800,
+            'gasAdcUmbral' => 3300,
             'brokerHost' => 'broker.hivemq.com',
             'brokerPort' => 1883,
             'brokerWsPort' => 8000,
