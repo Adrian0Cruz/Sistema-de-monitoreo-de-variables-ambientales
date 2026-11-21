@@ -48,9 +48,9 @@
     "HUMO_DETECTADO"
   ],
   "thresholds": {
-    "temperatura_advertencia_c": 27.0,
-    "temperatura_critica_c": 31.0,
-    "gas_humo_adc": 3300,
+    "temperatura_advertencia_c": 28.0,
+    "temperatura_critica_c": 35.0,
+    "gas_humo_adc": 3500,
     "adc_full_scale": 4095
   },
   "timing": {

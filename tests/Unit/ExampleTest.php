@@ -17,12 +17,12 @@ class ExampleTest extends TestCase
 
         $this->assertIsArray($settings);
         $this->assertEquals(18.0, $settings['tempMin']);
-        $this->assertEquals(27.0, $settings['tempMax']);
-        $this->assertEquals(31.0, $settings['tempCritica']);
+        $this->assertEquals(28.0, $settings['tempMax']);
+        $this->assertEquals(35.0, $settings['tempCritica']);
         $this->assertEquals(40.0, $settings['humMin']);
         $this->assertEquals(60.0, $settings['humMax']);
         $this->assertEquals(75.0, $settings['humCritica']);
-        $this->assertEquals(3300, $settings['gasAdcUmbral']);
+        $this->assertEquals(3500, $settings['gasAdcUmbral']);
         $this->assertEquals('broker.hivemq.com', $settings['brokerHost']);
         $this->assertEquals(1883, $settings['brokerPort']);
         $this->assertEquals('intalnet/sala01/telemetria', $settings['topic']);

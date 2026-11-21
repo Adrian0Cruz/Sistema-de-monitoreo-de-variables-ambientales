@@ -75,10 +75,9 @@ const char* TOPIC_CONFIG     = "intalnet/sala01/config";
 // 3. VARIABLES GLOBALES Y UMBRALES DINÁMICOS
 // ==============================================================================
 // Umbrales calibrables dinámicamente desde la interfaz web de AetherSens:
-// Valores basados en estándar ASHRAE TC 9.9 / TIA-942 para Salas Técnicas de Telecomunicación:
-float tempUmbralAdvertencia = 27.0; // °C -> Límite superior recomendado ASHRAE (Pre-alarma / LED Amarillo)
-float tempUmbralCritico     = 31.0; // °C -> Temperatura Crítica (Alarma: LED Rojo y Buzzer sin necesidad de humo)
-int   mq2UmbralHumo         = 3300; // Escala ADC (0 - 4095) -> Humo casi al máximo para disparar alarma
+float tempUmbralAdvertencia = 28.0; // °C -> Advertencia térmica (Pre-alarma / LED Amarillo)
+float tempUmbralCritico     = 35.0; // °C -> Temperatura Crítica (Alarma directa: LED Rojo y Buzzer)
+int   mq2UmbralHumo         = 3500; // Escala ADC (0 - 4095) -> Humo para alarma (requiere además temp de advertencia)
 
 // Estados operativos:
 enum EstadoOperativo {
@@ -158,9 +157,9 @@ int leerMQ2() {
  */
 void cargarUmbralesDesdeNVS() {
   preferences.begin("aethersens", true); // Modo sólo lectura
-  tempUmbralAdvertencia = preferences.getFloat("t_adv", 27.0);
-  tempUmbralCritico     = preferences.getFloat("t_crit", 31.0);
-  mq2UmbralHumo         = preferences.getInt("gas_h", 3300);
+  tempUmbralAdvertencia = preferences.getFloat("t_adv", 28.0);
+  tempUmbralCritico     = preferences.getFloat("t_crit", 35.0);
+  mq2UmbralHumo         = preferences.getInt("gas_h", 3500);
   preferences.end();
 
   Serial.println("[NVS] Umbrales cargados de memoria Flash:");
@@ -453,38 +452,46 @@ void loop() {
 
     int nivelGas = leerMQ2();
 
-    // 4. Evaluar estado operativo con histéresis y criterios para sala técnica (ASHRAE TC 9.9):
-    //    - El humo solo activa la alarma (Buzzer + LED Rojo) si está casi al máximo (>= 3300 ADC).
-    //    - La alarma se dispara por alta temperatura crítica (>= 31.0 °C) sin necesidad de humo.
-    //    - Rango 27.0 °C a 30.9 °C o humo moderado (>= 1800 ADC) genera ADVERTENCIA (LED Amarillo, sin buzzer).
+    // 4. Evaluar estado operativo con histéresis:
+    //    - El humo ya NO activa la alarma solo: requiere humo >= 3500 ADC Y temperatura de advertencia (>= 28.0 °C).
+    //    - Alta temperatura crítica (>= 35.0 °C) activa la alarma directamente (LED Rojo + Buzzer).
+    //    - Temperatura de advertencia (>= 28.0 °C) o humo alto sin temperatura suficiente activa ADVERTENCIA (LED Amarillo, sin buzzer).
     const int   HISTERESIS_GAS         = 150; // Margen de despeje para sensor MQ-2 (ADC)
     const float HISTERESIS_TEMP        = 0.5; // Margen de despeje para temperatura (°C)
     const int   MQ2_UMBRAL_ADVERTENCIA = 1800; // Nivel moderado de gas/humo para advertencia preventiva
 
-    bool humoAlarma = (estadoActual == ESTADO_HUMO_DETECTADO)
-                        ? (nivelGas >= (mq2UmbralHumo - HISTERESIS_GAS))
-                        : (nivelGas >= mq2UmbralHumo);
-
+    // A) Temperatura crítica (>= 35.0 °C): Alarma acústica directa sin requerir humo
     bool tempCritica = (estadoActual == ESTADO_CRITICO)
                         ? (temperatura >= (tempUmbralCritico - HISTERESIS_TEMP))
                         : (temperatura >= tempUmbralCritico);
 
-    bool tempAdvertencia = (estadoActual == ESTADO_ADVERTENCIA)
+    // B) Temperatura de advertencia (>= 28.0 °C):
+    bool tempAdvertencia = (estadoActual == ESTADO_ADVERTENCIA || estadoActual == ESTADO_CRITICO || estadoActual == ESTADO_HUMO_DETECTADO)
                         ? (temperatura >= (tempUmbralAdvertencia - HISTERESIS_TEMP))
                         : (temperatura >= tempUmbralAdvertencia);
 
+    // C) Nivel alto de humo (>= 3500 ADC):
+    bool humoAlto = (estadoActual == ESTADO_HUMO_DETECTADO)
+                        ? (nivelGas >= (mq2UmbralHumo - HISTERESIS_GAS))
+                        : (nivelGas >= mq2UmbralHumo);
+
+    // D) Condición combinada para humo: no se activa solo, requiere temperatura de advertencia
+    bool humoAlarmaCombinada = humoAlto && tempAdvertencia;
+
+    // E) Presencia preventiva de gas/humo moderado:
     bool gasAdvertencia = (estadoActual == ESTADO_ADVERTENCIA)
                         ? (nivelGas >= (MQ2_UMBRAL_ADVERTENCIA - HISTERESIS_GAS))
                         : (nivelGas >= MQ2_UMBRAL_ADVERTENCIA);
 
-    if (humoAlarma) {
-      estadoActual = ESTADO_HUMO_DETECTADO; // Dispara LED Rojo y Buzzer (Humo casi al tope)
-    } else if (tempCritica) {
-      estadoActual = ESTADO_CRITICO;         // Dispara LED Rojo y Buzzer (Alta temperatura sin necesidad de humo)
-    } else if (tempAdvertencia || gasAdvertencia) {
-      estadoActual = ESTADO_ADVERTENCIA;     // LED Amarillo (Advertencia preventiva sin buzzer)
+    // Jerarquía de estados operativos:
+    if (tempCritica) {
+      estadoActual = ESTADO_CRITICO;         // Dispara LED Rojo y Buzzer (Temperatura crítica >= 35.0°C)
+    } else if (humoAlarmaCombinada) {
+      estadoActual = ESTADO_HUMO_DETECTADO; // Dispara LED Rojo y Buzzer (Humo >= 3500 Y Temp >= 28.0°C)
+    } else if (tempAdvertencia || humoAlto || gasAdvertencia) {
+      estadoActual = ESTADO_ADVERTENCIA;     // LED Amarillo (Advertencia sin buzzer sonoro)
     } else {
-      estadoActual = ESTADO_NORMAL;          // LED Verde (Condiciones óptimas según estándar)
+      estadoActual = ESTADO_NORMAL;          // LED Verde (Condiciones normales)
     }
 
     // 5. Actualizar actuadores físicos locales (Semáforo LED y Buzzer):

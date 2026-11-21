@@ -34,7 +34,7 @@
                 statusLabel="Normal"
                 icon="thermostat"
                 iconColor="text-primary"
-                range="Rango operativo: {{ $settings['tempMin'] ?? 18 }} °C – {{ $settings['tempMax'] ?? 27 }} °C"
+                range="Rango operativo: {{ $settings['tempMin'] ?? 18 }} °C – {{ $settings['tempMax'] ?? 28 }} °C"
                 rangeId="metric-temp-range"
                 valueId="metric-temp-val"
                 statusBadgeId="metric-temp-badge"
@@ -83,11 +83,11 @@
                 <div class="mt-4 sm:mt-5">
                     <div class="relative h-2 w-full rounded-full bg-surface-container-highest">
                         <div id="metric-gas-bar" class="h-2 rounded-full bg-tertiary transition-all duration-300" style="width: 0%"></div>
-                        <span id="metric-gas-marker" class="absolute -top-1 h-4 w-0.5 bg-error/70" style="left: {{ round((($settings['gasAdcUmbral'] ?? 3300) / 4095) * 100, 1) }}%"></span>
+                        <span id="metric-gas-marker" class="absolute -top-1 h-4 w-0.5 bg-error/70" style="left: {{ round((($settings['gasAdcUmbral'] ?? 3500) / 4095) * 100, 1) }}%"></span>
                     </div>
                     <div class="flex items-center justify-between mt-2 text-[10px] sm:text-[11px] text-outline font-code-sm text-code-sm">
                         <span>0</span>
-                        <span>Umbral: <span id="metric-gas-threshold">{{ $settings['gasAdcUmbral'] ?? 3300 }}</span> ADC</span>
+                        <span>Umbral: <span id="metric-gas-threshold">{{ $settings['gasAdcUmbral'] ?? 3500 }}</span> ADC</span>
                         <span>4095</span>
                     </div>
                 </div>

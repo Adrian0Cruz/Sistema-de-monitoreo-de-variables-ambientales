@@ -36,11 +36,11 @@ Microcontrolador ESP32 DevKit USB-C + Sensor SHT40 (I2C) / MQ-2 para Sala Técni
 - Pin GPIO 14 -----------> Pulsador industrial NO (a GND, INPUT_PULLUP interno)
 - Pin GND ---------------> Cátodo común de los LED / emisor del transistor
 
-3. UMBRALES DE OPERACIÓN (coinciden con el firmware y norma ASHRAE TC 9.9)
+3. UMBRALES DE OPERACIÓN (coinciden con el firmware)
 --------------------------------------------------------------------------------
-- TEMP_UMBRAL_ADVERTENCIA = 27.0 °C   -> LED Amarillo (Límite superior ASHRAE)
-- TEMP_UMBRAL_CRITICO     = 31.0 °C   -> LED Rojo + Buzzer (Alarma sin necesidad de humo)
-- MQ2_UMBRAL_HUMO         = 3300 ADC  -> Estado HUMO_DETECTADO (LED Rojo + Buzzer, casi al máximo)
+- TEMP_UMBRAL_ADVERTENCIA = 28.0 °C   -> LED Amarillo
+- TEMP_UMBRAL_CRITICO     = 35.0 °C   -> LED Rojo + Buzzer
+- MQ2_UMBRAL_HUMO         = 3500 ADC  -> Estado HUMO_DETECTADO (Requiere temp de advertencia para sonar)
 - El LED Rojo en estado crítico NO se apaga; solo el buzzer puede silenciarse
   con el pulsador industrial NO (silenciamiento temporal, se rearma al normalizar).
 - La lógica de alarma es local y edge-first: la caída de Wi-Fi o del broker MQTT
@@ -80,9 +80,9 @@ web y NO por valores fijos "hardcodeados" en el firmware del ESP32:
    Tópico de configuración: intalnet/sala01/config
    Payload JSON:
    {
-     "temp_adv": 27.0,
-     "temp_crit": 31.0,
-     "gas_humo": 3300
+     "temp_adv": 28.0,
+     "temp_crit": 35.0,
+     "gas_humo": 3500
    }
 
 2. En el ESP32, suscribirse en el método setup() al tópico de configuración:
@@ -107,7 +107,7 @@ web y NO por valores fijos "hardcodeados" en el firmware del ESP32:
    }
 
 4. Al iniciar el ESP32, leer los valores guardados en NVS. Si no existen, usar
-   los valores de fábrica (27.0 °C / 31.0 °C / 3300 ADC).
+   los valores de fábrica (28.0 °C / 35.0 °C / 3500 ADC).
    Gracias a MQTT Retain, apenas el ESP32 se conecta al broker, recibirá de
    inmediato la última configuración guardada en el panel web.
 
