@@ -240,7 +240,7 @@
                 <div class="space-y-1.5">
                     <label class="block font-label-sm text-label-sm text-on-surface">Intervalo de Transmisión (Segundos)</label>
                     <input type="number" x-model.number="form.intervalo" class="w-full bg-surface-container-high border border-outline-variant/40 rounded-lg px-3 py-2 text-on-surface font-code-sm text-code-sm focus:ring-1 focus:ring-primary focus:border-primary">
-                    <span class="text-[11px] text-outline">Cadencia de envío del ESP32 (3 segundos)</span>
+                    <span class="text-[11px] text-outline">Cadencia de envío del ESP32 (5 segundos)</span>
                 </div>
 
                 {{-- Timeout / Watchdog --}}

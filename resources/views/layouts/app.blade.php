@@ -11,6 +11,15 @@
     {{-- Favicon para todas las vistas --}}
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('favicon.png') }}">
+
+    {{-- PWA Manifest & Soporte Móvil Nativo --}}
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AetherSens">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -146,6 +155,81 @@
         {{-- SECCIÓN INFERIOR CONSOLIDADA (TELEMETRÍA + RELOJ AL FINAL)   --}}
         {{-- ============================================================ --}}
         <div class="flex flex-col shrink-0 mt-auto">
+
+            {{-- ═══════════════════════════════════════════════════════════════════ --}}
+            {{-- SECCIÓN: CONTROL DE ALARMA REMOTA (Arriba del Núcleo de Telemetría) --}}
+            {{-- ═══════════════════════════════════════════════════════════════════ --}}
+            <div x-data="{
+                alarmaActiva: false,
+                silenciado: false,
+                enviando: false,
+                estadoEsp: 'NORMAL',
+
+                init() {
+                    window.addEventListener('intalnet:alarm-state', (e) => {
+                        this.estadoEsp = e.detail?.estado || 'NORMAL';
+                        this.silenciado = e.detail?.silenciado || false;
+                        this.alarmaActiva = (this.estadoEsp === 'CRITICO' || this.estadoEsp === 'HUMO_DETECTADO') && !this.silenciado;
+                    });
+                    window.addEventListener('intalnet:alarm-silenced-ack', () => {
+                        this.silenciado = true;
+                        this.alarmaActiva = false;
+                        this.enviando = false;
+                    });
+                },
+
+                silenciar() {
+                    if (this.enviando) return;
+                    this.enviando = true;
+                    window.dispatchEvent(new CustomEvent('intalnet:silence-alarm'));
+                    setTimeout(() => { this.enviando = false; }, 5000);
+                }
+            }" class="p-space-md border-t border-outline-variant bg-surface-container-lowest/50">
+
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px]"
+                              :class="alarmaActiva ? 'text-error animate-bounce' : (silenciado ? 'text-secondary' : 'text-outline')">
+                            notifications_active
+                        </span>
+                        <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-medium">Control de Alarma</span>
+                    </div>
+                    <span class="flex h-2 w-2 relative" x-show="alarmaActiva">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-error opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-error"></span>
+                    </span>
+                    <span x-show="!alarmaActiva" class="w-2 h-2 rounded-full"
+                          :class="silenciado ? 'bg-secondary' : 'bg-tertiary'"></span>
+                </div>
+
+                {{-- Estado actual del buzzer en sala --}}
+                <div class="flex items-center justify-between text-code-sm text-xs font-code-sm mb-3">
+                    <span class="text-outline">Buzzer ESP32:</span>
+                    <span class="font-semibold"
+                          :class="alarmaActiva ? 'text-error animate-pulse' : (silenciado ? 'text-secondary' : 'text-tertiary')"
+                          x-text="alarmaActiva ? '¡SONANDO EN SALA!' : (silenciado ? 'Silenciado' : 'En Reposo')">
+                        En Reposo
+                    </span>
+                </div>
+
+                {{-- Botón interactivo para apagar / silenciar la alarma --}}
+                <button type="button"
+                        @click="silenciar()"
+                        :disabled="enviando || (!alarmaActiva && !silenciado)"
+                        class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-label-md text-xs font-medium transition-all shadow-sm cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                        :class="alarmaActiva
+                            ? (enviando ? 'bg-secondary/20 text-secondary border border-secondary/30' : 'bg-error text-on-error hover:bg-error/90 animate-pulse border border-error/50')
+                            : (silenciado
+                                ? 'bg-secondary/15 text-secondary border border-secondary/30'
+                                : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest border border-outline-variant/30')">
+                    <span class="material-symbols-outlined text-[17px]"
+                          :class="enviando ? 'animate-spin' : ''"
+                          x-text="enviando ? 'sync' : (alarmaActiva ? 'volume_off' : (silenciado ? 'check' : 'notifications_paused'))"></span>
+                    <span x-text="enviando ? 'Enviando comando...' : (alarmaActiva ? 'Silenciar Alarma Ahora' : (silenciado ? 'Alarma Silenciada' : 'Apagar Alarma'))">
+                        Apagar Alarma
+                    </span>
+                </button>
+            </div>
 
             {{-- Telemetry Core Diagnostics --}}
             <div class="p-space-md border-t border-outline-variant bg-surface-container-lowest/60">
@@ -488,8 +572,65 @@
                 </div>
             </div>
 
-            {{-- Right: ESP32 Status + User Profile --}}
+            {{-- Right: Alarm Silencer + ESP32 Status + User Profile --}}
             <div class="flex items-center gap-2 sm:gap-4 shrink-0">
+
+                {{-- ═══════════════════════════════════════════════════════════ --}}
+                {{-- BOTÓN DE SILENCIAMIENTO REMOTO DE ALARMA (MQTT → ESP32)   --}}
+                {{-- ═══════════════════════════════════════════════════════════ --}}
+                <div x-data="{
+                    alarmaActiva: false,
+                    silenciado: false,
+                    enviando: false,
+                    estadoEsp: 'NORMAL',
+
+                    init() {
+                        window.addEventListener('intalnet:alarm-state', (e) => {
+                            this.estadoEsp = e.detail?.estado || 'NORMAL';
+                            this.silenciado = e.detail?.silenciado || false;
+                            this.alarmaActiva = (this.estadoEsp === 'CRITICO' || this.estadoEsp === 'HUMO_DETECTADO') && !this.silenciado;
+                        });
+                        window.addEventListener('intalnet:alarm-silenced-ack', () => {
+                            this.silenciado = true;
+                            this.alarmaActiva = false;
+                            this.enviando = false;
+                        });
+                    },
+
+                    silenciar() {
+                        if (this.enviando || this.silenciado) return;
+                        this.enviando = true;
+                        window.dispatchEvent(new CustomEvent('intalnet:silence-alarm'));
+                        setTimeout(() => { this.enviando = false; }, 5000);
+                    }
+                }" class="relative">
+                    {{-- Botón visible SOLO cuando hay alarma activa --}}
+                    <button x-show="alarmaActiva"
+                            x-cloak
+                            @click="silenciar()"
+                            :disabled="enviando"
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 scale-90"
+                            x-transition:enter-end="opacity-100 scale-100"
+                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-label-md font-medium transition-all shadow-md cursor-pointer disabled:opacity-50"
+                            :class="enviando
+                                ? 'bg-secondary/20 text-secondary border border-secondary/30'
+                                : 'bg-error text-on-error hover:bg-error/90 animate-pulse border border-error/50'"
+                            title="Silenciar alarma del ESP32 de forma remota">
+                        <span class="material-symbols-outlined text-[18px]"
+                              :class="enviando ? 'animate-spin' : ''"
+                              x-text="enviando ? 'sync' : 'volume_off'"></span>
+                        <span class="hidden sm:inline" x-text="enviando ? 'Enviando...' : 'Silenciar Alarma'"></span>
+                    </button>
+
+                    {{-- Indicador de alarma silenciada --}}
+                    <div x-show="silenciado && (estadoEsp === 'CRITICO' || estadoEsp === 'HUMO_DETECTADO')"
+                         x-cloak
+                         class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary/15 text-secondary border border-secondary/30 font-label-md text-xs">
+                        <span class="material-symbols-outlined text-[16px]">volume_off</span>
+                        <span class="hidden sm:inline">Alarma Silenciada</span>
+                    </div>
+                </div>
 
                 {{-- ESP32 Connection Pill (Adaptativo: compacto en móvil, completo en tablet/desktop) --}}
                 <div class="flex items-center gap-1.5 sm:gap-2 bg-surface-container px-2 sm:px-3.5 py-1 sm:py-1.5 rounded-full border border-tertiary/30">
@@ -590,8 +731,24 @@
                             </div>
                         </div>
 
-                        {{-- Footer del Centro de Notificaciones --}}
-                        <div class="pt-2 px-3 border-t border-outline-variant/20 mt-1">
+                        {{-- Footer del Centro de Notificaciones con activación Web Push --}}
+                        <div class="pt-2 px-3 border-t border-outline-variant/20 mt-1 flex flex-col gap-1.5" x-data="{
+                            pushPerm: typeof Notification !== 'undefined' ? Notification.permission : 'denied',
+                            solicitarPush() {
+                                window.dispatchEvent(new CustomEvent('intalnet:request-push-perm'));
+                                setTimeout(() => {
+                                    if (typeof Notification !== 'undefined') this.pushPerm = Notification.permission;
+                                }, 1000);
+                            }
+                        }">
+                            <button type="button"
+                                    x-show="pushPerm !== 'granted'"
+                                    @click="solicitarPush()"
+                                    class="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-label-md text-xs transition-colors border border-primary/20 cursor-pointer">
+                                <span class="material-symbols-outlined text-[15px]">notifications_active</span>
+                                <span>Activar Notificaciones Web Push</span>
+                            </button>
+
                             <a href="{{ route('alert-logs') }}"
                                class="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-highest text-primary font-label-md text-xs transition-colors">
                                 <span>Ver todas las alertas</span>

@@ -184,7 +184,7 @@
                     </div>
                     <div class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface-container-low text-outline font-code-sm text-code-sm border border-outline-variant/30">
                         <span class="material-symbols-outlined text-[14px]">sensors</span>
-                        <span>SHT40 + MQ-2 • {{ $settings['intervalo'] ?? 3 }}s</span>
+                        <span>SHT40 + MQ-2 • {{ $settings['intervalo'] ?? 5 }}s</span>
                     </div>
                 </div>
             </div>

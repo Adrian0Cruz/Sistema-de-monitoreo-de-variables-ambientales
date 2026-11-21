@@ -28,7 +28,7 @@ if (! function_exists('getAetherSensSettings')) {
             'topicEstado' => 'intalnet/sala01/estado',
             'topicAlerta' => 'intalnet/sala01/alerta',
             'topicConfig' => 'intalnet/sala01/config',
-            'intervalo' => 3,
+            'intervalo' => 5,
             'watchdog' => 10,
             'zona' => 'Sala 01 - Intalnet (Montería)',
             'audioAlert' => true,

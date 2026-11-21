@@ -1,0 +1,25 @@
+{
+  "name": "AetherSens - Monitoreo Ambiental",
+  "short_name": "AetherSens",
+  "description": "Monitoreo en tiempo real de temperatura, humedad y gases para salas técnicas y servidores.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111827",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -22,7 +22,7 @@
     - Wire (incluida nativamente en el core ESP32 para comunicación I2C)
 
   Universidad de Córdoba - Montería, Colombia
-  Desarrolladores: Cristian González, Jesús Hernández, Julio Nova, Jorge Oviedo
+  Desarrolladores: Cristian González, Jesús Hernández, Julio Nova, Jorge Oviedo, Dariel Ortega
  ================================================================================
 */
 
@@ -92,7 +92,7 @@ EstadoOperativo estadoAnterior = ESTADO_NORMAL;
 
 bool  buzzerSilenciado      = false;
 unsigned long ultimoEnvioMs = 0;
-const unsigned long INTERVALO_ENVIO_MS = 3000; // Cadencia: cada 3 segundos
+const unsigned long INTERVALO_ENVIO_MS = 5000; // Cadencia: cada 5 segundos
 
 // Objetos del sistema:
 WiFiClient espClient;
@@ -269,6 +269,27 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     DeserializationError error = deserializeJson(doc, mensaje);
 
     if (!error) {
+      // ── Comando remoto de silenciamiento desde la web ──
+      if (!doc["silenciar_buzzer"].isNull() && doc["silenciar_buzzer"].as<bool>() == true) {
+        if ((estadoActual == ESTADO_CRITICO || estadoActual == ESTADO_HUMO_DETECTADO) && !buzzerSilenciado) {
+          buzzerSilenciado = true;
+          digitalWrite(PIN_BUZZER, LOW);
+          Serial.println("[ALERTA] Buzzer silenciado remotamente desde la interfaz web.");
+
+          JsonDocument silDoc;
+          silDoc["evento"]      = "SILENCIADO_REMOTO";
+          silDoc["dispositivo"] = DISPOSITIVO_ID;
+          silDoc["sala_id"]     = SALA_ID;
+          silDoc["mensaje"]     = "Alarma sonora silenciada remotamente desde el panel web AetherSens";
+          silDoc["timestamp_s"] = millis() / 1000;
+
+          char silBuf[256];
+          serializeJson(silDoc, silBuf);
+          mqttClient.publish(TOPIC_ALERTA, silBuf, false);
+        }
+        return; // Comando de silenciamiento procesado, no es calibración
+      }
+
       float nuevoAdv  = (!doc["temp_adv"].isNull())  ? doc["temp_adv"].as<float>()  : tempUmbralAdvertencia;
       float nuevoCrit = (!doc["temp_crit"].isNull()) ? doc["temp_crit"].as<float>() : tempUmbralCritico;
       int   nuevoGas  = (!doc["gas_humo"].isNull())  ? doc["gas_humo"].as<int>()    : mq2UmbralHumo;
@@ -414,7 +435,7 @@ void loop() {
   // 2. Verificar pulsador industrial de silenciamiento:
   verificarPulsadorSilenciamiento();
 
-  // 3. Cadencia de lectura y telemetría (cada 3 segundos):
+  // 3. Cadencia de lectura y telemetría (cada 5 segundos):
   unsigned long ahora = millis();
   if (ahora - ultimoEnvioMs >= INTERVALO_ENVIO_MS) {
     ultimoEnvioMs = ahora;
@@ -431,11 +452,33 @@ void loop() {
 
     int nivelGas = leerMQ2();
 
-    // 4. Evaluar estado operativo basado en los umbrales configurados:
-    if (nivelGas >= mq2UmbralHumo) {
+    // 4. Evaluar estado operativo con histéresis para evitar oscilaciones rápidas (flicker):
+    const int   HISTERESIS_GAS  = 120; // Margen de despeje para sensor MQ-2 (ADC)
+    const float HISTERESIS_TEMP = 0.5; // Margen de despeje para temperatura (°C)
+
+    if (estadoActual == ESTADO_HUMO_DETECTADO) {
+      // Para salir de estado de humo, el gas debe descender por debajo del umbral menos el margen de histéresis
+      if (nivelGas < (mq2UmbralHumo - HISTERESIS_GAS)) {
+        if (temperatura >= tempUmbralCritico) {
+          estadoActual = ESTADO_CRITICO;
+        } else if (temperatura >= tempUmbralAdvertencia) {
+          estadoActual = ESTADO_ADVERTENCIA;
+        } else {
+          estadoActual = ESTADO_NORMAL;
+        }
+      }
+    } else if (nivelGas >= mq2UmbralHumo) {
       estadoActual = ESTADO_HUMO_DETECTADO;
+    } else if (estadoActual == ESTADO_CRITICO) {
+      if (temperatura < (tempUmbralCritico - HISTERESIS_TEMP)) {
+        estadoActual = (temperatura >= tempUmbralAdvertencia) ? ESTADO_ADVERTENCIA : ESTADO_NORMAL;
+      }
     } else if (temperatura >= tempUmbralCritico) {
       estadoActual = ESTADO_CRITICO;
+    } else if (estadoActual == ESTADO_ADVERTENCIA) {
+      if (temperatura < (tempUmbralAdvertencia - HISTERESIS_TEMP)) {
+        estadoActual = ESTADO_NORMAL;
+      }
     } else if (temperatura >= tempUmbralAdvertencia) {
       estadoActual = ESTADO_ADVERTENCIA;
     } else {

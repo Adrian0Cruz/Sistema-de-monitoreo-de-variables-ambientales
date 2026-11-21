@@ -21,6 +21,7 @@ const DEFAULT_SETTINGS = {
     topic: 'intalnet/sala01/telemetria',
     topicEstado: 'intalnet/sala01/estado',
     topicAlerta: 'intalnet/sala01/alerta',
+    topicConfig: 'intalnet/sala01/config',
     tempMin: 18,
     tempMax: 35,
     tempCritica: 38,
@@ -28,7 +29,7 @@ const DEFAULT_SETTINGS = {
     humMax: 60,
     humCritica: 75,
     gasAdcUmbral: 1800,
-    intervalo: 3,
+    intervalo: 5,
     watchdog: 10,
     zona: 'Sala 01 - Intalnet (Montería)',
     audioAlert: true,
@@ -412,6 +413,127 @@ export function initDashboard() {
         }
     };
 
+    // ══════════════════════════════════════════════════════════════════════════
+    // NOTIFICACIONES PUSH DEL NAVEGADOR (Web Notification API) & TONO DE AUDIO
+    // ══════════════════════════════════════════════════════════════════════════
+
+    let notificationPermission = typeof Notification !== 'undefined' ? Notification.permission : 'denied';
+
+    const requestNotificationPermission = () => {
+        if (typeof Notification === 'undefined') return;
+        if (Notification.permission === 'default') {
+            Notification.requestPermission().then((permission) => {
+                notificationPermission = permission;
+                console.info(`[AetherSens] Permiso de notificaciones: ${permission}`);
+            });
+        } else {
+            notificationPermission = Notification.permission;
+        }
+    };
+
+    requestNotificationPermission();
+
+    window.addEventListener('intalnet:request-push-perm', () => {
+        if (typeof Notification === 'undefined') {
+            alert('Este navegador no soporta Notificaciones Web.');
+            return;
+        }
+        Notification.requestPermission().then((permission) => {
+            notificationPermission = permission;
+            if (permission === 'granted') {
+                sendBrowserNotification(
+                    '🔔 Notificaciones AetherSens Activas',
+                    'Las notificaciones Web Push han sido habilitadas exitosamente para este sistema de monitoreo.',
+                    'normal'
+                );
+            }
+        });
+    });
+
+    const playAudioAlert = (severity = 'critical') => {
+        if (!settings.audioAlert) return;
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            const ctx = new AudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = severity === 'critical' ? 'sawtooth' : 'sine';
+            osc.frequency.setValueAtTime(severity === 'critical' ? 880 : 587, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(severity === 'critical' ? 440 : 880, ctx.currentTime + 0.25);
+            gain.gain.setValueAtTime(0.12, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.3);
+        } catch (e) {}
+    };
+
+    let lastNotificationKey = null;
+    let lastNotificationAt = 0;
+
+    const sendBrowserNotification = (title, body, severity = 'warning') => {
+        playAudioAlert(severity);
+
+        // Vibración física en teléfonos celulares (Android / iOS soportados)
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+            try {
+                navigator.vibrate(severity === 'critical' ? [300, 150, 300, 150, 300] : [200, 100, 200]);
+            } catch (e) {}
+        }
+
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+
+        // Anti-spam: agrupar por categoría/título para evitar disparos múltiples por pequeños cambios de ADC o temperatura
+        const categoryKey = title.trim();
+        const now = Date.now();
+        if (categoryKey === lastNotificationKey && now - lastNotificationAt < 15000) {
+            return;
+        }
+        lastNotificationKey = categoryKey;
+        lastNotificationAt = now;
+
+        const iconEmoji = severity === 'critical' ? '🚨' : (severity === 'warning' ? '⚠️' : '🔔');
+
+        const notificationOptions = {
+            body: `${iconEmoji} ${body}`,
+            icon: '/favicon.png',
+            badge: '/favicon.png',
+            tag: 'aethersens-active-alert',
+            vibrate: severity === 'critical' ? [300, 150, 300, 150, 300] : [200, 100, 200],
+            requireInteraction: severity === 'critical',
+            silent: false,
+            data: { url: '/dashboard' }
+        };
+
+        // En dispositivos móviles, la forma oficial y soportada es a través del Service Worker
+        if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+            navigator.serviceWorker.ready.then((registration) => {
+                registration.showNotification(title, notificationOptions);
+            }).catch(() => {
+                tryFallbackNotification(title, notificationOptions, severity);
+            });
+        } else {
+            tryFallbackNotification(title, notificationOptions, severity);
+        }
+    };
+
+    const tryFallbackNotification = (title, options, severity) => {
+        try {
+            const notification = new Notification(title, options);
+            notification.onclick = () => {
+                window.focus();
+                notification.close();
+            };
+            if (severity !== 'critical') {
+                setTimeout(() => notification.close(), 8000);
+            }
+        } catch (e) {
+            console.warn('[AetherSens] Error al crear notificación estándar:', e);
+        }
+    };
+
     const addAlertRow = ({ event, detail, status, key }) => {
         const tbody = element('telemetry-table-body');
 
@@ -486,6 +608,13 @@ export function initDashboard() {
                 }
                 window.localStorage.setItem(INCIDENTS_STORAGE_KEY, JSON.stringify(incList));
             } catch (e) {}
+
+            // Disparar notificación push al navegador
+            sendBrowserNotification(
+                status === 'critical' ? `🚨 Alerta Crítica · ${event}` : `⚠️ Advertencia · ${event}`,
+                detail,
+                status
+            );
         }
     };
 
@@ -499,6 +628,14 @@ export function initDashboard() {
         setText('metric-buzzer-detail', silenced
             ? 'El operador accionó el pulsador industrial NO'
             : (critical ? 'Alarma sonora activa por condición crítica' : 'Sin condiciones que requieran alarma'));
+
+        // Emitir evento para que el botón de silenciamiento en el header conozca el estado
+        window.dispatchEvent(new CustomEvent('intalnet:alarm-state', {
+            detail: {
+                estado: state?.replace('ESTADO_', '') || 'NORMAL',
+                silenciado: silenced,
+            }
+        }));
     };
 
     const handleTelemetry = (payload) => {
@@ -655,7 +792,7 @@ export function initDashboard() {
             ].filter(Boolean).join(' · ');
 
             addAlertRow({
-                event: 'Alerta ESP32 · Cambio de estado',
+                event: `Cambio de estado: ${mapped.label}`,
                 detail,
                 status: mapped.status,
                 key: `cambio:${state}`,
@@ -664,14 +801,18 @@ export function initDashboard() {
             return;
         }
 
-        if (event === 'SILENCIADO_MANUAL') {
+        if (event === 'SILENCIADO_MANUAL' || event === 'SILENCIADO_REMOTO') {
             addAlertRow({
-                event: 'Alerta ESP32 · Buzzer silenciado',
-                detail: payload.mensaje || 'Silenciado mediante pulsador industrial NO',
+                event: 'Buzzer Silenciado',
+                detail: payload.mensaje || (event === 'SILENCIADO_REMOTO'
+                    ? 'Silenciado remotamente desde el panel web AetherSens'
+                    : 'Silenciado mediante pulsador industrial NO'),
                 status: 'warning',
                 key: `silencio:${time}`,
             });
 
+            // Confirmar al botón del header que la alarma fue silenciada
+            window.dispatchEvent(new CustomEvent('intalnet:alarm-silenced-ack'));
             return;
         }
 
@@ -682,6 +823,37 @@ export function initDashboard() {
             key: `evento:${event}:${time}`,
         });
     };
+
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // SILENCIAMIENTO REMOTO DE ALARMA VÍA MQTT (Web → ESP32)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    window.addEventListener('intalnet:silence-alarm', () => {
+        if (!client || !client.connected) {
+            console.warn('[AetherSens] No se puede silenciar: sin conexión MQTT.');
+            return;
+        }
+
+        const topicConfig = settings.topicConfig || 'intalnet/sala01/config';
+        const payload = JSON.stringify({ silenciar_buzzer: true });
+
+        client.publish(topicConfig, payload, { qos: 1, retain: false }, (err) => {
+            if (err) {
+                console.error('[AetherSens] Error al enviar comando de silenciamiento:', err);
+            } else {
+                console.info(`[AetherSens] Comando de silenciamiento enviado a ${topicConfig}`);
+
+                // Registrar en la tabla de alertas localmente de forma inmediata
+                addAlertRow({
+                    event: 'Acción Operador · Silenciamiento remoto',
+                    detail: 'Comando enviado al ESP32 vía MQTT desde el panel web',
+                    status: 'warning',
+                    key: `web-silence:${Date.now()}`,
+                });
+            }
+        });
+    });
 
     const connect = () => {
         const url = buildBrokerUrl(settings, useSecureSocket);
