@@ -1,7 +1,7 @@
 # ==============================================================================
 # AetherSens - Imagen Docker Oficial (PHP 8.3 FPM + Nginx/Node/Composer)
 # ==============================================================================
-FROM php:8.3-fpm-alpine
+FROM php:8.4-fpm-alpine
 
 LABEL maintainer="AetherSens Team <soporte@aethersens.internal>"
 LABEL description="Contenedor de backend y procesamiento para la plataforma AetherSens"

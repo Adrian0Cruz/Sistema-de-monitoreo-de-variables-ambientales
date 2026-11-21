@@ -31,7 +31,7 @@ services:
     container_name: aethersens-web
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-8000}:80"
+      - "127.0.0.1:${APP_PORT:-8007}:80"
     volumes:
       - .:/var/www/html:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -48,7 +48,7 @@ services:
     container_name: aethersens-db
     restart: unless-stopped
     ports:
-      - "${FORWARD_DB_PORT:-3306}:3306"
+      - "127.0.0.1:${FORWARD_DB_PORT:-3312}:3306"
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-aethersens}
       MYSQL_USER: ${DB_USERNAME:-aethersens}
@@ -73,7 +73,7 @@ services:
     container_name: aethersens-redis
     restart: unless-stopped
     ports:
-      - "${FORWARD_REDIS_PORT:-6379}:6379"
+      - "127.0.0.1:${FORWARD_REDIS_PORT:-6380}:6379"
     volumes:
       - aethersens-redis-data:/data
     networks:
@@ -113,7 +113,7 @@ services:
     restart: unless-stopped
     ports:
       - "${MQTT_PORT:-1883}:1883"
-      - "${MQTT_WS_PORT:-9001}:9001"
+      - "127.0.0.1:${MQTT_WS_PORT:-9001}:9001"
     volumes:
       - ./docker/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - aethersens-mosquitto-data:/mosquitto/data
