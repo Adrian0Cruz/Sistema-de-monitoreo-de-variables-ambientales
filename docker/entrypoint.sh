@@ -36,6 +36,15 @@ if [ ! -d /var/www/html/vendor ]; then
     composer install --no-interaction --prefer-dist --optimize-autoloader
 fi
 
+# Compilar activos de frontend Vite si no están generados
+if [ ! -d /var/www/html/public/build ] || [ ! -f /var/www/html/public/build/manifest.json ]; then
+    echo "[AetherSens Docker] Compilando activos de Vite para producción..."
+    if [ ! -d /var/www/html/node_modules ]; then
+        npm install --no-audit --no-fund
+    fi
+    npm run build || true
+fi
+
 # Generar clave de aplicación si no está asignada
 if grep -q "APP_KEY=$" /var/www/html/.env 2>/dev/null || grep -q "APP_KEY=\s*$" /var/www/html/.env 2>/dev/null || ! grep -q "APP_KEY=" /var/www/html/.env 2>/dev/null; then
     echo "[AetherSens Docker] Generando clave de aplicación (APP_KEY)..."

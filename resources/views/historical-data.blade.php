@@ -39,20 +39,20 @@
         {{-- ============================================================ --}}
         {{-- TARJETAS KPI CON PROMEDIOS Y NIVELES (5 TARJETAS AJUSTADAS)  --}}
         {{-- ============================================================ --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6 2xl:gap-8">
 
             {{-- Stat 1: Temperatura Media --}}
-            <div class="rounded-xl bg-surface-container p-5 shadow-card border border-outline-variant/30 flex flex-col justify-between">
+            <div class="rounded-xl bg-surface-container p-4 sm:p-5 2xl:p-6 shadow-card border border-outline-variant/30 flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-3">
                         <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
-                            <span class="material-symbols-outlined text-[20px]">thermostat</span>
+                            <span class="material-symbols-outlined text-[20px]" aria-hidden="true">thermostat</span>
                         </div>
                         <span id="kpi-temp-badge" class="px-2.5 py-0.5 rounded-full bg-surface-container-highest text-outline font-label-sm text-label-sm border border-outline-variant/30 whitespace-nowrap">
                             En espera
                         </span>
                     </div>
-                    <h3 class="font-headline-sm text-headline-sm text-on-surface font-medium mb-3">
+                    <h3 class="font-headline-sm text-sm sm:text-headline-sm text-on-surface font-medium mb-3">
                         Temperatura Media
                     </h3>
                 </div>
@@ -69,17 +69,17 @@
             </div>
 
             {{-- Stat 2: Sensación Térmica Media --}}
-            <div class="rounded-xl bg-surface-container p-5 shadow-card border border-outline-variant/30 flex flex-col justify-between">
+            <div class="rounded-xl bg-surface-container p-4 sm:p-5 2xl:p-6 shadow-card border border-outline-variant/30 flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-3">
                         <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary-fixed">
-                            <span class="material-symbols-outlined text-[20px]">device_thermostat</span>
+                            <span class="material-symbols-outlined text-[20px]" aria-hidden="true">device_thermostat</span>
                         </div>
                         <span id="kpi-heat-badge" class="px-2.5 py-0.5 rounded-full bg-surface-container-highest text-outline font-label-sm text-label-sm border border-outline-variant/30 whitespace-nowrap">
                             En espera
                         </span>
                     </div>
-                    <h3 class="font-headline-sm text-headline-sm text-on-surface font-medium mb-3">
+                    <h3 class="font-headline-sm text-sm sm:text-headline-sm text-on-surface font-medium mb-3">
                         Sensación Térmica
                     </h3>
                 </div>
@@ -95,17 +95,17 @@
             </div>
 
             {{-- Stat 3: Humedad Media --}}
-            <div class="rounded-xl bg-surface-container p-5 shadow-card border border-outline-variant/30 flex flex-col justify-between">
+            <div class="rounded-xl bg-surface-container p-4 sm:p-5 2xl:p-6 shadow-card border border-outline-variant/30 flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-3">
                         <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary">
-                            <span class="material-symbols-outlined text-[20px]">humidity_mid</span>
+                            <span class="material-symbols-outlined text-[20px]" aria-hidden="true">humidity_mid</span>
                         </div>
                         <span id="kpi-hum-badge" class="px-2.5 py-0.5 rounded-full bg-surface-container-highest text-outline font-label-sm text-label-sm border border-outline-variant/30 whitespace-nowrap">
                             En espera
                         </span>
                     </div>
-                    <h3 class="font-headline-sm text-headline-sm text-on-surface font-medium mb-3">
+                    <h3 class="font-headline-sm text-sm sm:text-headline-sm text-on-surface font-medium mb-3">
                         Humedad Media
                     </h3>
                 </div>
@@ -276,7 +276,7 @@
                 if (el) el.textContent = val;
             };
 
-            function applyRange(rangeKey) {
+            async function applyRange(rangeKey) {
                 currentRange = rangeKey;
 
                 // 1. Actualizar botones del selector

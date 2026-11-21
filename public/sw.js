@@ -22,8 +22,8 @@ self.addEventListener('push', (event) => {
     let data = {
         title: '⚠️ Alerta AetherSens',
         body: 'Nueva anomalía detectada en sala técnica.',
-        icon: '/favicon.png',
-        badge: '/favicon.png',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
         tag: 'aethersens-active-alert',
         severity: 'warning'
     };

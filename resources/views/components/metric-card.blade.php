@@ -27,19 +27,19 @@ $dotClasses = match($status) {
 };
 @endphp
 
-<div class="rounded-xl bg-surface-container p-5 sm:p-6 lg:p-8 flex flex-col justify-between shadow-card transition-colors hover:bg-surface-container-high border border-outline-variant/30">
+<div class="rounded-xl bg-surface-container p-4 sm:p-5 xl:p-6 2xl:p-8 flex flex-col justify-between shadow-card transition-colors hover:bg-surface-container-high border border-outline-variant/30">
 
     {{-- Header: Icon + Title + Status Badge --}}
-    <div class="flex items-center justify-between mb-5 sm:mb-8">
-        <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center {{ $iconColor }}">
-                <span class="material-symbols-outlined text-[20px]">{{ $icon }}</span>
+    <div class="flex items-center justify-between mb-4 sm:mb-6">
+        <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0 {{ $iconColor }}">
+                <span class="material-symbols-outlined text-[18px] sm:text-[20px]" aria-hidden="true">{{ $icon }}</span>
             </div>
-            <span class="font-headline-sm text-headline-sm text-on-surface">{{ $title }}</span>
+            <span class="font-headline-sm text-sm sm:text-headline-sm text-on-surface truncate">{{ $title }}</span>
         </div>
 
-        <span @if($statusBadgeId) id="{{ $statusBadgeId }}" @endif class="px-2.5 py-1 rounded-md {{ $statusClasses }} font-label-sm text-label-sm flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full {{ $dotClasses }}"></span>
+        <span @if($statusBadgeId) id="{{ $statusBadgeId }}" @endif class="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md {{ $statusClasses }} font-label-sm text-xs sm:text-label-sm flex items-center gap-1.5 shrink-0">
+            <span class="w-1.5 h-1.5 rounded-full {{ $dotClasses }}" aria-hidden="true"></span>
             <span class="status-text">{{ $statusLabel }}</span>
         </span>
     </div>

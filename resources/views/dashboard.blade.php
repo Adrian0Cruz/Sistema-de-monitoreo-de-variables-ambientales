@@ -24,7 +24,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 2xl:gap-8">
 
             <x-metric-card
                 title="Temperatura"
@@ -80,14 +80,14 @@
                 valueId="metric-gas-val"
                 statusBadgeId="metric-gas-badge"
             >
-                <div class="mt-5">
+                <div class="mt-4 sm:mt-5">
                     <div class="relative h-2 w-full rounded-full bg-surface-container-highest">
                         <div id="metric-gas-bar" class="h-2 rounded-full bg-tertiary transition-all duration-300" style="width: 0%"></div>
                         <span id="metric-gas-marker" class="absolute -top-1 h-4 w-0.5 bg-error/70" style="left: {{ round((($settings['gasAdcUmbral'] ?? 3300) / 4095) * 100, 1) }}%"></span>
                     </div>
-                    <div class="flex items-center justify-between mt-2 text-[11px] text-outline font-code-sm text-code-sm">
+                    <div class="flex items-center justify-between mt-2 text-[10px] sm:text-[11px] text-outline font-code-sm text-code-sm">
                         <span>0</span>
-                        <span>Umbral de humo: <span id="metric-gas-threshold">{{ $settings['gasAdcUmbral'] ?? 3300 }}</span> ADC</span>
+                        <span>Umbral: <span id="metric-gas-threshold">{{ $settings['gasAdcUmbral'] ?? 3300 }}</span> ADC</span>
                         <span>4095</span>
                     </div>
                 </div>
@@ -95,7 +95,7 @@
 
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 2xl:gap-8">
 
             <x-metric-card
                 title="Estado de la Sala"
@@ -110,16 +110,16 @@
                 statusBadgeId="metric-estado-badge"
             />
 
-            <div class="rounded-xl bg-surface-container p-5 sm:p-6 flex flex-col justify-between shadow-card border border-outline-variant/30">
+            <div class="rounded-xl bg-surface-container p-4 sm:p-5 xl:p-6 2xl:p-8 flex flex-col justify-between shadow-card border border-outline-variant/30">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary">
-                            <span class="material-symbols-outlined text-[20px]">campaign</span>
+                    <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                        <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary shrink-0">
+                            <span class="material-symbols-outlined text-[18px] sm:text-[20px]" aria-hidden="true">campaign</span>
                         </div>
-                        <span class="font-headline-sm text-headline-sm text-on-surface">Buzzer de Alarma</span>
+                        <span class="font-headline-sm text-sm sm:text-headline-sm text-on-surface truncate">Buzzer de Alarma</span>
                     </div>
-                    <span id="metric-buzzer-badge" class="px-2.5 py-1 rounded-md bg-tertiary/10 text-tertiary font-label-sm text-label-sm flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    <span id="metric-buzzer-badge" class="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md bg-tertiary/10 text-tertiary font-label-sm text-xs sm:text-label-sm flex items-center gap-1.5 shrink-0">
+                        <span class="w-1.5 h-1.5 rounded-full bg-tertiary" aria-hidden="true"></span>
                         <span class="status-text">Inactivo</span>
                     </span>
                 </div>
@@ -129,12 +129,12 @@
                 </div>
             </div>
 
-            <div class="rounded-xl bg-surface-container p-5 sm:p-6 flex flex-col justify-between shadow-card border border-outline-variant/30">
-                <div class="flex items-center gap-2.5 mb-4">
-                    <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
-                        <span class="material-symbols-outlined text-[20px]">timer</span>
+            <div class="rounded-xl bg-surface-container p-4 sm:p-5 xl:p-6 2xl:p-8 flex flex-col justify-between shadow-card border border-outline-variant/30">
+                <div class="flex items-center gap-2 sm:gap-2.5 mb-4">
+                    <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary shrink-0">
+                        <span class="material-symbols-outlined text-[18px] sm:text-[20px]" aria-hidden="true">timer</span>
                     </div>
-                    <span class="font-headline-sm text-headline-sm text-on-surface">Uptime del Nodo</span>
+                    <span class="font-headline-sm text-sm sm:text-headline-sm text-on-surface truncate">Uptime del Nodo</span>
                 </div>
                 <div>
                     <span id="metric-uptime-val" class="font-display-lg text-display-lg font-semibold text-on-surface">—</span>
@@ -142,12 +142,12 @@
                 </div>
             </div>
 
-            <div class="rounded-xl bg-surface-container p-5 sm:p-6 flex flex-col justify-between shadow-card border border-outline-variant/30">
-                <div class="flex items-center gap-2.5 mb-4">
-                    <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary">
-                        <span class="material-symbols-outlined text-[20px]">memory</span>
+            <div class="rounded-xl bg-surface-container p-4 sm:p-5 xl:p-6 2xl:p-8 flex flex-col justify-between shadow-card border border-outline-variant/30">
+                <div class="flex items-center gap-2 sm:gap-2.5 mb-4">
+                    <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary shrink-0">
+                        <span class="material-symbols-outlined text-[18px] sm:text-[20px]" aria-hidden="true">memory</span>
                     </div>
-                    <span class="font-headline-sm text-headline-sm text-on-surface">Dispositivo</span>
+                    <span class="font-headline-sm text-sm sm:text-headline-sm text-on-surface truncate">Dispositivo</span>
                 </div>
                 <div>
                     <span id="metric-node-device" class="font-code-sm text-code-sm font-semibold text-on-surface block text-headline-sm">ESP32_SALA01</span>
@@ -157,14 +157,14 @@
 
         </div>
 
-        <div class="rounded-xl bg-surface-container p-4 sm:p-6 lg:p-8 shadow-card border border-outline-variant/30">
+        <div class="rounded-xl bg-surface-container p-4 sm:p-6 lg:p-8 2xl:p-10 shadow-card border border-outline-variant/30" role="region" aria-label="Telemetría en tiempo real">
 
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                     <div class="flex items-center gap-2">
                         <h2 class="font-headline-sm text-headline-sm text-on-surface">Telemetr&iacute;a en Vivo</h2>
                         <span class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-tertiary/10 text-tertiary font-label-sm text-label-sm border border-tertiary/20">
-                            <span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-ping"></span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-ping" aria-hidden="true"></span>
                             Tiempo Real (UTC -5)
                         </span>
                     </div>
@@ -174,26 +174,26 @@
                 <div class="flex flex-wrap items-center gap-3 sm:gap-6">
                     <div class="flex flex-wrap items-center gap-3 sm:gap-4">
                         <div class="flex items-center gap-2">
-                            <span class="w-3 h-1 bg-primary rounded-full"></span>
+                            <span class="w-3 h-1 bg-primary rounded-full" aria-hidden="true"></span>
                             <span class="font-label-sm text-label-sm text-on-surface">Temperatura (°C - Izq)</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="w-3 h-1 bg-secondary rounded-full"></span>
+                            <span class="w-3 h-1 bg-secondary rounded-full" aria-hidden="true"></span>
                             <span class="font-label-sm text-label-sm text-on-surface">Humedad (% RH - Der)</span>
                         </div>
                     </div>
                     <div class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface-container-low text-outline font-code-sm text-code-sm border border-outline-variant/30">
-                        <span class="material-symbols-outlined text-[14px]">sensors</span>
+                        <span class="material-symbols-outlined text-[14px]" aria-hidden="true">sensors</span>
                         <span>SHT40 + MQ-2 • {{ $settings['intervalo'] ?? 5 }}s</span>
                     </div>
                 </div>
             </div>
 
             <div class="relative w-full">
-                <div id="telemetry-chart" class="w-full h-64 sm:h-72 lg:h-80 select-none"></div>
-                <div id="telemetry-empty-state" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div id="telemetry-chart" class="w-full h-64 sm:h-72 lg:h-80 2xl:h-96 select-none"></div>
+                <div id="telemetry-empty-state" class="absolute inset-0 flex items-center justify-center pointer-events-none" aria-live="polite">
                     <div class="flex flex-col items-center gap-2 text-outline">
-                        <span class="material-symbols-outlined text-[28px]">sensors_off</span>
+                        <span class="material-symbols-outlined text-[28px]" aria-hidden="true">sensors_off</span>
                         <span class="font-label-md text-label-md">Esperando telemetr&iacute;a del ESP32...</span>
                     </div>
                 </div>
@@ -201,7 +201,7 @@
 
         </div>
 
-        <div class="rounded-xl bg-surface-container overflow-hidden shadow-card border border-outline-variant/30">
+        <div class="rounded-xl bg-surface-container overflow-hidden shadow-card border border-outline-variant/30" role="region" aria-label="Tabla de eventos y alertas">
 
             <div class="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                 <div>

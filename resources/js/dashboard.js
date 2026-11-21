@@ -196,11 +196,20 @@ export function initDashboard() {
             };
 
             headerDot.className = dotClasses[state] || dotClasses.broker;
+            headerDot.setAttribute('title', `ESP32: ${message}`);
+            headerDot.setAttribute('aria-label', `ESP32: ${message}`);
         }
 
         if (headerText) {
-            headerText.textContent = `ESP32: ${message.replace(/^ESP32\s+/i, '')}`;
-            headerText.className = `font-code-sm text-code-sm ${
+            let shortStatus = 'Sala 01';
+            if (state === 'live') shortStatus = 'En línea';
+            else if (state === 'error') shortStatus = 'Error';
+            else if (state === 'stale') shortStatus = 'Sin señal';
+            else if (state === 'connecting') shortStatus = 'Conectando';
+            else if (state === 'broker') shortStatus = 'Conectado';
+
+            headerText.textContent = `ESP32: ${shortStatus}`;
+            headerText.className = `font-code-sm text-[11px] sm:text-xs hidden md:inline whitespace-nowrap ${
                 state === 'live'
                     ? 'text-tertiary'
                     : (state === 'error' ? 'text-error' : 'text-secondary')
@@ -498,8 +507,8 @@ export function initDashboard() {
 
         const notificationOptions = {
             body: `${iconEmoji} ${body}`,
-            icon: '/favicon.png',
-            badge: '/favicon.png',
+            icon: '/icon-192.png',
+            badge: '/icon-192.png',
             tag: 'aethersens-active-alert',
             vibrate: severity === 'critical' ? [300, 150, 300, 150, 300] : [200, 100, 200],
             requireInteraction: severity === 'critical',
@@ -863,7 +872,7 @@ export function initDashboard() {
         client = mqtt.connect(url, {
             clientId: `WebDashboard_${Math.random().toString(16).slice(2, 10)}`,
             clean: true,
-            connectTimeout: 8000,
+            connectTimeout: 5000,
             reconnectPeriod: 4000,
             keepalive: 30,
         });
@@ -934,7 +943,7 @@ export function initDashboard() {
 
     applyThresholdsToLabels();
     renderChart();
-    connect();
+    setTimeout(connect, 50);
 
     // Reaccionar a cambios en el selector de salas
     window.addEventListener('intalnet:room-changed', (e) => {

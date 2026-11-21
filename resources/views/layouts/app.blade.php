@@ -8,10 +8,11 @@
     <title>{{ config('app.name', 'AetherSens') }} - {{ $title ?? 'Panel de Control' }}</title>
     <meta name="description" content="AetherSens – Monitoreo ambiental en tiempo real para salas de servidores y racks de telecomunicaciones.">
 
-    {{-- Favicon para todas las vistas --}}
+    {{-- Favicon y suite de iconos multi-resolución --}}
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('favicon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
 
     {{-- PWA Manifest & Soporte Móvil Nativo --}}
     <link rel="manifest" href="{{ asset('manifest.json') }}">
@@ -21,20 +22,29 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="AetherSens">
 
+    {{-- Preload de fuente local de iconos para renderizado instantáneo (sin texto crudo) --}}
+    <link rel="preload" href="{{ asset('fonts/material-symbols-outlined.woff2') }}" as="font" type="font/woff2" crossorigin>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     {{-- Geist via Fontshare --}}
     <link href="https://api.fontshare.com/v2/css?f[]=geist@1,2,3,4,5,6,7&display=swap" rel="stylesheet">
     {{-- JetBrains Mono for code/telemetry values --}}
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    {{-- Material Symbols --}}
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
 <body class="bg-surface font-body-md text-on-surface antialiased selection:bg-primary-container/30 selection:text-on-surface min-h-screen"
       x-data="{ mobileMenuOpen: false }">
+
+    {{-- Enlace de salto accesible para lectores de pantalla y navegación por teclado (WCAG 2.1 AA) --}}
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-on-primary focus:rounded-lg focus:shadow-xl focus:outline-none focus:ring-2 focus:ring-on-primary font-label-md text-sm">
+        Saltar al contenido principal
+    </a>
+
+    {{-- Anunciador accesible en vivo para lectores de pantalla --}}
+    <div id="a11y-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
     {{-- Backdrop Overlay para dispositivos móviles y tablets (< 1024px) --}}
     <div x-show="mobileMenuOpen"
@@ -46,11 +56,14 @@
          x-transition:leave="transition-opacity ease-in duration-150"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden">
+         class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+         aria-hidden="true">
     </div>
 
     {{-- ===================== SIDEBAR (DRAWER EN MÓVIL / FIJO EN DESKTOP) ===================== --}}
-    <aside :class="mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+    <aside role="navigation"
+           aria-label="Menú principal de navegación"
+           :class="mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
            class="w-64 fixed top-0 bottom-0 left-0 bg-surface-container-low border-r border-outline-variant z-50 flex flex-col justify-between select-none transition-transform duration-200 ease-in-out">
 
         <div class="flex flex-col overflow-y-auto scrollbar-none">
@@ -304,7 +317,7 @@
     <div class="pl-0 lg:pl-64 min-h-screen flex flex-col transition-all">
 
         {{-- Top Header Responsive --}}
-        <header class="fixed top-0 left-0 lg:left-64 right-0 h-16 bg-surface-container-low/95 backdrop-blur-md border-b border-outline-variant z-40 flex items-center justify-between px-3 sm:px-6 lg:px-8">
+        <header role="banner" class="fixed top-0 left-0 lg:left-64 right-0 h-16 bg-surface-container-low/95 backdrop-blur-md border-b border-outline-variant z-40 flex items-center justify-between px-3 sm:px-6 lg:px-8">
 
             {{-- Left: Botón Hamburger + Selector de Sala --}}
             <div class="flex items-center gap-2 sm:gap-4 min-w-0" x-data="{
@@ -421,13 +434,14 @@
                 <button type="button"
                         @click="mobileMenuOpen = true"
                         class="lg:hidden p-1.5 sm:p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors shrink-0"
-                        aria-label="Abrir menú de navegación">
-                    <span class="material-symbols-outlined text-[24px]">menu</span>
+                        aria-label="Abrir menú de navegación"
+                        :aria-expanded="mobileMenuOpen">
+                    <span class="material-symbols-outlined text-[24px]" aria-hidden="true">menu</span>
                 </button>
 
                 <div class="flex items-center gap-1.5 sm:gap-2 truncate">
                     <span class="font-headline-sm text-sm sm:text-base text-on-surface font-semibold shrink-0">AetherSens</span>
-                    <span class="text-outline text-xs hidden sm:inline">/</span>
+                    <span class="text-outline text-xs hidden sm:inline" aria-hidden="true">/</span>
                     <span class="font-body-md text-xs sm:text-sm text-on-surface-variant truncate hidden md:inline" x-text="currentRoomFullName">Monitoreo de Sala 01</span>
                 </div>
 
@@ -435,10 +449,13 @@
                 <div class="relative shrink-0" @click.outside="openRooms = false">
                     <button type="button"
                             @click="openRooms = !openRooms"
-                            class="flex items-center gap-1 sm:gap-1.5 bg-surface-container-high border border-outline-variant rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 hover:bg-surface-container-highest transition-colors cursor-pointer text-left text-xs sm:text-sm">
-                        <span class="material-symbols-outlined text-[15px] sm:text-[16px] text-primary">location_on</span>
-                        <span class="font-label-md text-label-sm sm:text-label-md text-on-surface" x-text="currentRoomName">Sala 01</span>
-                        <span class="material-symbols-outlined text-[15px] sm:text-[16px] text-outline transition-transform" :class="openRooms ? 'rotate-180 text-primary' : ''">expand_more</span>
+                            class="flex items-center gap-1 sm:gap-1.5 bg-surface-container-high border border-outline-variant rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 hover:bg-surface-container-highest transition-colors cursor-pointer text-left text-xs sm:text-sm"
+                            aria-haspopup="listbox"
+                            :aria-expanded="openRooms"
+                            aria-label="Seleccionar sala técnica">
+                        <span class="material-symbols-outlined text-[15px] sm:text-[16px] text-primary" aria-hidden="true">location_on</span>
+                        <span class="font-label-md text-xs sm:text-label-md text-on-surface whitespace-nowrap" x-text="currentRoomName">Sala 01</span>
+                        <span class="material-symbols-outlined text-[15px] sm:text-[16px] text-outline transition-transform" :class="openRooms ? 'rotate-180 text-primary' : ''" aria-hidden="true">expand_more</span>
                     </button>
 
                     <div x-show="openRooms"
@@ -503,73 +520,78 @@
                     </div>
                 </div>
 
-                {{-- Modal para Agregar Nueva Sala Técnica --}}
-                <div x-show="modalNuevaSala"
-                     x-cloak
-                     class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-scrim/70 backdrop-blur-sm"
-                     @click.self="modalNuevaSala = false"
-                     x-transition:enter="transition ease-out duration-200"
-                     x-transition:enter-start="opacity-0"
-                     x-transition:enter-end="opacity-100"
-                     x-transition:leave="transition ease-in duration-150"
-                     x-transition:leave-start="opacity-100"
-                     x-transition:leave-end="opacity-0">
-                    <div class="bg-surface-container rounded-2xl border border-outline-variant shadow-2xl max-w-md w-full p-6 text-on-surface"
+                {{-- Modal para Agregar Nueva Sala Técnica (Teleport a body para centrado absoluto en viewport) --}}
+                <template x-teleport="body">
+                    <div x-show="modalNuevaSala"
+                         x-cloak
+                         class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-sm overflow-y-auto"
+                         @click.self="modalNuevaSala = false"
+                         role="dialog"
+                         aria-modal="true"
+                         aria-labelledby="modal-nueva-sala-titulo"
                          x-transition:enter="transition ease-out duration-200"
-                         x-transition:enter-start="opacity-0 scale-95"
-                         x-transition:enter-end="opacity-100 scale-100">
-                        <div class="flex items-center justify-between pb-3 border-b border-outline-variant/30">
-                            <div class="flex items-center gap-2">
-                                <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
-                                    <span class="material-symbols-outlined text-[18px]">add_business</span>
+                         x-transition:enter-start="opacity-0"
+                         x-transition:enter-end="opacity-100"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0">
+                        <div class="bg-surface-container rounded-2xl border border-outline-variant shadow-2xl max-w-md w-full p-6 text-on-surface my-auto"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100">
+                            <div class="flex items-center justify-between pb-3 border-b border-outline-variant/30">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center text-primary shrink-0">
+                                        <span class="material-symbols-outlined text-[18px]" aria-hidden="true">add_business</span>
+                                    </div>
+                                    <h3 id="modal-nueva-sala-titulo" class="font-headline-sm text-base sm:text-lg font-semibold text-on-surface">Nueva Sala Técnica</h3>
                                 </div>
-                                <h3 class="font-headline-sm text-base sm:text-lg font-semibold text-on-surface">Nueva Sala Técnica</h3>
-                            </div>
-                            <button type="button" @click="modalNuevaSala = false" class="text-outline hover:text-on-surface p-1 rounded-lg">
-                                <span class="material-symbols-outlined text-[20px]">close</span>
-                            </button>
-                        </div>
-
-                        <div class="space-y-4 py-4">
-                            <p class="font-body-sm text-xs text-outline leading-relaxed">
-                                Registre una nueva sala técnica o rack en la red de monitoreo de Intalnet. La sala quedará disponible inmediatamente para vincularse al ESP32.
-                            </p>
-
-                            <div>
-                                <label class="block font-label-md text-xs text-outline mb-1">Nombre de la Sala / Sector *</label>
-                                <input type="text"
-                                       x-model="nuevaSalaNombre"
-                                       placeholder="Ej: Sala 02 - Pasillo Frío"
-                                       class="w-full bg-surface-container-high border border-outline-variant rounded-lg px-3 py-2 font-body-md text-sm text-on-surface placeholder:text-outline/50 focus:ring-1 focus:ring-primary focus:border-primary outline-none">
+                                <button type="button" @click="modalNuevaSala = false" class="text-outline hover:text-on-surface p-1 rounded-lg" aria-label="Cerrar ventana">
+                                    <span class="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
+                                </button>
                             </div>
 
-                            <div>
-                                <label class="block font-label-md text-xs text-outline mb-1">Identificador de Dispositivo ESP32</label>
-                                <input type="text"
-                                       x-model="nuevaSalaCodigo"
-                                       placeholder="Ej: ESP32_SALA02"
-                                       class="w-full bg-surface-container-high border border-outline-variant rounded-lg px-3 py-2 font-code-sm text-sm text-on-surface placeholder:text-outline/50 focus:ring-1 focus:ring-primary focus:border-primary outline-none uppercase">
-                                <p class="text-[11px] text-outline mt-1 font-body-sm">Debe coincidir con la constante <code class="text-primary font-code-sm">DISPOSITIVO_ID</code> configurada en el firmware del ESP32.</p>
+                            <div class="space-y-4 py-4">
+                                <p class="font-body-sm text-xs text-outline leading-relaxed">
+                                    Registre una nueva sala técnica o rack en la red de monitoreo de Intalnet. La sala quedará disponible inmediatamente para vincularse al ESP32.
+                                </p>
+
+                                <div>
+                                    <label class="block font-label-md text-xs text-outline mb-1">Nombre de la Sala / Sector *</label>
+                                    <input type="text"
+                                           x-model="nuevaSalaNombre"
+                                           placeholder="Ej: Sala 02 - Pasillo Frío"
+                                           class="w-full bg-surface-container-high border border-outline-variant rounded-lg px-3 py-2 font-body-md text-sm text-on-surface placeholder:text-outline/50 focus:ring-1 focus:ring-primary focus:border-primary outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block font-label-md text-xs text-outline mb-1">Identificador de Dispositivo ESP32</label>
+                                    <input type="text"
+                                           x-model="nuevaSalaCodigo"
+                                           placeholder="Ej: ESP32_SALA02"
+                                           class="w-full bg-surface-container-high border border-outline-variant rounded-lg px-3 py-2 font-code-sm text-sm text-on-surface placeholder:text-outline/50 focus:ring-1 focus:ring-primary focus:border-primary outline-none uppercase">
+                                    <p class="text-[11px] text-outline mt-1 font-body-sm">Debe coincidir con la constante <code class="text-primary font-code-sm">DISPOSITIVO_ID</code> configurada en el firmware del ESP32.</p>
+                                </div>
+
+                                <div x-show="errorNuevaSala" class="p-2.5 rounded-lg bg-error/10 border border-error/30 text-error text-xs font-body-sm" x-text="errorNuevaSala"></div>
                             </div>
 
-                            <div x-show="errorNuevaSala" class="p-2.5 rounded-lg bg-error/10 border border-error/30 text-error text-xs font-body-sm" x-text="errorNuevaSala"></div>
-                        </div>
-
-                        <div class="flex items-center justify-end gap-3 pt-3 border-t border-outline-variant/30">
-                            <button type="button"
-                                    @click="modalNuevaSala = false"
-                                    class="px-4 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-outline hover:text-on-surface font-label-md text-xs sm:text-sm transition-colors">
-                                Cancelar
-                            </button>
-                            <button type="button"
-                                    @click="guardarNuevaSala()"
-                                    class="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-on-primary font-label-md text-xs sm:text-sm transition-colors flex items-center gap-1.5 shadow-md">
-                                <span class="material-symbols-outlined text-[16px]">save</span>
-                                <span>Guardar Sala</span>
-                            </button>
+                            <div class="flex items-center justify-end gap-3 pt-3 border-t border-outline-variant/30">
+                                <button type="button"
+                                        @click="modalNuevaSala = false"
+                                        class="px-4 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-outline hover:text-on-surface font-label-md text-xs sm:text-sm transition-colors">
+                                    Cancelar
+                                </button>
+                                <button type="button"
+                                        @click="guardarNuevaSala()"
+                                        class="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-on-primary font-label-md text-xs sm:text-sm transition-colors flex items-center gap-1.5 shadow-md">
+                                    <span class="material-symbols-outlined text-[16px]" aria-hidden="true">save</span>
+                                    <span>Guardar Sala</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </template>
             </div>
 
             {{-- Right: Alarm Silencer + ESP32 Status + User Profile --}}
@@ -633,9 +655,11 @@
                 </div>
 
                 {{-- ESP32 Connection Pill (Adaptativo: compacto en móvil, completo en tablet/desktop) --}}
-                <div class="flex items-center gap-1.5 sm:gap-2 bg-surface-container px-2 sm:px-3.5 py-1 sm:py-1.5 rounded-full border border-tertiary/30">
-                    <div id="esp32-header-dot" class="w-2 h-2 rounded-full bg-tertiary shrink-0"></div>
-                    <span id="esp32-header-status" class="font-code-sm text-[11px] sm:text-xs text-tertiary hidden sm:inline whitespace-nowrap">ESP32: Sala 01</span>
+                <div class="flex items-center gap-1.5 sm:gap-2 bg-surface-container px-2 sm:px-3.5 py-1 sm:py-1.5 rounded-full border border-tertiary/30"
+                     title="Estado de conexión del ESP32"
+                     aria-live="polite">
+                    <div id="esp32-header-dot" class="w-2 h-2 rounded-full bg-tertiary shrink-0" aria-hidden="true"></div>
+                    <span id="esp32-header-status" class="font-code-sm text-[11px] sm:text-xs text-tertiary hidden md:inline whitespace-nowrap">ESP32: Sala 01</span>
                 </div>
 
                 <div class="h-4 w-px bg-outline-variant hidden sm:block"></div>
@@ -826,7 +850,7 @@
         </header>
 
         {{-- Dynamic Page Content (Max width para 4K/2560px con padding fluido para 320px) --}}
-        <main class="relative pt-20 bg-surface min-h-screen px-3 sm:px-6 lg:px-8 py-6 w-full max-w-[2560px] mx-auto">
+        <main id="main-content" role="main" tabindex="-1" class="relative pt-20 bg-surface min-h-screen px-3 sm:px-6 lg:px-8 2xl:px-12 py-6 w-full max-w-[2000px] 2xl:max-w-[2400px] mx-auto focus:outline-none">
             {{ $slot }}
         </main>
 

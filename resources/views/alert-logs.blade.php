@@ -25,49 +25,49 @@
         {{-- ============================================================ --}}
         {{-- TARJETAS DE RESUMEN DE INCIDENTES (REACTIVAS)                --}}
         {{-- ============================================================ --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 2xl:gap-8">
 
-            <div class="rounded-xl bg-surface-container p-6 shadow-card border border-outline-variant/30 flex items-center justify-between">
+            <div class="rounded-xl bg-surface-container p-5 sm:p-6 shadow-card border border-outline-variant/30 flex items-center justify-between">
                 <div>
                     <span class="font-label-sm text-label-sm uppercase text-outline">Críticas Activas</span>
                     <div class="font-display-lg text-display-lg font-semibold text-error mt-1" x-text="totalCriticasActivas"></div>
                     <span class="font-body-sm text-body-sm text-outline mt-0.5">Requiere acción</span>
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-error/15 border border-error/30 flex items-center justify-center text-error">
-                    <span class="material-symbols-outlined text-[24px]">crisis_alert</span>
+                <div class="w-12 h-12 rounded-xl bg-error/15 border border-error/30 flex items-center justify-center text-error shrink-0">
+                    <span class="material-symbols-outlined text-[24px]" aria-hidden="true">crisis_alert</span>
                 </div>
             </div>
 
-            <div class="rounded-xl bg-surface-container p-6 shadow-card border border-outline-variant/30 flex items-center justify-between">
+            <div class="rounded-xl bg-surface-container p-5 sm:p-6 shadow-card border border-outline-variant/30 flex items-center justify-between">
                 <div>
                     <span class="font-label-sm text-label-sm uppercase text-outline">Advertencias</span>
                     <div class="font-display-lg text-display-lg font-semibold text-secondary mt-1" x-text="totalAdvertenciasActivas"></div>
                     <span class="font-body-sm text-body-sm text-outline mt-0.5">Bajo supervisión</span>
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-secondary/15 border border-secondary/30 flex items-center justify-center text-secondary">
-                    <span class="material-symbols-outlined text-[24px]">warning</span>
+                <div class="w-12 h-12 rounded-xl bg-secondary/15 border border-secondary/30 flex items-center justify-center text-secondary shrink-0">
+                    <span class="material-symbols-outlined text-[24px]" aria-hidden="true">warning</span>
                 </div>
             </div>
 
-            <div class="rounded-xl bg-surface-container p-6 shadow-card border border-outline-variant/30 flex items-center justify-between">
+            <div class="rounded-xl bg-surface-container p-5 sm:p-6 shadow-card border border-outline-variant/30 flex items-center justify-between">
                 <div>
                     <span class="font-label-sm text-label-sm uppercase text-outline">Incidentes Resueltos</span>
                     <div class="font-display-lg text-display-lg font-semibold text-tertiary mt-1" x-text="totalResueltos"></div>
                     <span class="font-body-sm text-body-sm text-outline mt-0.5">Historial acumulado</span>
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-tertiary/15 border border-tertiary/30 flex items-center justify-center text-tertiary">
-                    <span class="material-symbols-outlined text-[24px]">check_circle</span>
+                <div class="w-12 h-12 rounded-xl bg-tertiary/15 border border-tertiary/30 flex items-center justify-center text-tertiary shrink-0">
+                    <span class="material-symbols-outlined text-[24px]" aria-hidden="true">check_circle</span>
                 </div>
             </div>
 
-            <div class="rounded-xl bg-surface-container p-6 shadow-card border border-outline-variant/30 flex items-center justify-between">
+            <div class="rounded-xl bg-surface-container p-5 sm:p-6 shadow-card border border-outline-variant/30 flex items-center justify-between">
                 <div>
                     <span class="font-label-sm text-label-sm uppercase text-outline">Tiempo Medio Atención</span>
                     <div class="font-display-lg text-display-lg font-semibold text-primary mt-1" x-text="tiempoMedioAtencion"></div>
                     <span class="font-body-sm text-body-sm text-outline mt-0.5" x-text="totalResueltos > 0 ? 'SLA Cumplido' : 'Sin incidentes'"></span>
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-primary-container/20 border border-primary/30 flex items-center justify-center text-primary">
-                    <span class="material-symbols-outlined text-[24px]">timer</span>
+                <div class="w-12 h-12 rounded-xl bg-primary-container/20 border border-primary/30 flex items-center justify-center text-primary shrink-0">
+                    <span class="material-symbols-outlined text-[24px]" aria-hidden="true">timer</span>
                 </div>
             </div>
 
@@ -227,22 +227,29 @@
             </div>
 
             {{-- Pie de Tabla: Paginación y Contador de Incidentes --}}
-            <div class="px-8 py-3.5 bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-outline-variant/30 font-label-sm text-label-sm text-outline">
+            <div class="px-4 sm:px-6 lg:px-8 py-3.5 bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-outline-variant/30 font-label-sm text-label-sm text-outline">
                 <div>
-                    Mostrando <span class="text-on-surface font-medium" x-text="paginadas.length === 0 ? 0 : (paginaActual - 1) * porPagina + 1"></span> a 
-                    <span class="text-on-surface font-medium" x-text="paginadas.length === 0 ? 0 : (usandoBD ? Math.min(paginaActual * porPagina, (dbCounters ? (dbCounters.criticas + dbCounters.advertencias + dbCounters.reconocidos) : paginadas.length)) : Math.min(paginaActual * porPagina, filtradas.length))"></span> de 
-                    <span class="text-on-surface font-medium" x-text="usandoBD ? (dbCounters ? (dbCounters.criticas + dbCounters.advertencias + dbCounters.reconocidos) : paginadas.length) : filtradas.length"></span> incidentes
+                    <template x-if="totalRegistros === 0">
+                        <span>0 incidentes registrados</span>
+                    </template>
+                    <template x-if="totalRegistros > 0">
+                        <span>
+                            Mostrando <strong class="text-on-surface" x-text="(paginaActual - 1) * porPagina + 1"></strong> a 
+                            <strong class="text-on-surface" x-text="Math.min(paginaActual * porPagina, totalRegistros)"></strong> de 
+                            <strong class="text-on-surface" x-text="totalRegistros"></strong> incidentes
+                        </span>
+                    </template>
                 </div>
 
                 <div class="flex items-center gap-2" x-show="totalPaginas > 1">
-                    <button type="button" @click="irPagina(paginaActual - 1)" :disabled="paginaActual <= 1" :class="paginaActual <= 1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface-container-high hover:text-on-surface'" class="px-3 py-1.5 rounded-lg border border-outline-variant/30 transition-colors flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[16px]">chevron_left</span>
+                    <button type="button" @click="irPagina(paginaActual - 1)" :disabled="paginaActual <= 1" :class="paginaActual <= 1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface-container-high hover:text-on-surface'" class="px-3 py-1.5 rounded-lg border border-outline-variant/30 transition-colors flex items-center gap-1" aria-label="Página anterior">
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">chevron_left</span>
                         <span>Anterior</span>
                     </button>
                     <span class="px-2 text-on-surface">Página <strong x-text="paginaActual"></strong> de <strong x-text="totalPaginas"></strong></span>
-                    <button type="button" @click="irPagina(paginaActual + 1)" :disabled="paginaActual >= totalPaginas" :class="paginaActual >= totalPaginas ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface-container-high hover:text-on-surface'" class="px-3 py-1.5 rounded-lg border border-outline-variant/30 transition-colors flex items-center gap-1">
+                    <button type="button" @click="irPagina(paginaActual + 1)" :disabled="paginaActual >= totalPaginas" :class="paginaActual >= totalPaginas ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface-container-high hover:text-on-surface'" class="px-3 py-1.5 rounded-lg border border-outline-variant/30 transition-colors flex items-center gap-1" aria-label="Página siguiente">
                         <span>Siguiente</span>
-                        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">chevron_right</span>
                     </button>
                 </div>
             </div>
@@ -267,6 +274,7 @@
                 alertasBD: [],
                 dbCounters: null,
                 dbTotalPaginas: 1,
+                dbTotal: 0,
                 alertas: [],
 
                 init() {
@@ -280,6 +288,13 @@
                         this.paginaActual = 1;
                         this.cargarAlertas();
                     });
+                },
+
+                get totalRegistros() {
+                    if (this.usandoBD) {
+                        return this.dbTotal;
+                    }
+                    return this.filtradas.length;
                 },
 
                 get listaAlertas() {
@@ -333,8 +348,10 @@
                                 });
                                 this.dbCounters = json.counters;
                                 this.dbTotalPaginas = json.last_page || 1;
+                                this.dbTotal = json.total !== undefined ? json.total : (json.data ? json.data.length : 0);
                             } else {
                                 this.alertasBD = [];
+                                this.dbTotal = 0;
                             }
                         }
                     } catch (e) {
